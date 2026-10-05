@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, Shield, Menu, X, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
 interface StoreNavbarProps {
@@ -123,16 +123,6 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
               aria-label="Search"
             >
               <Search className="w-5 h-5" />
-            </button>
-
-            {/* Link to Admin Panel */}
-            <button
-              onClick={() => onNavigate(adminUser ? '/admin' : '/admin/login')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-[#13487E]/60 text-xs font-medium text-neutral-300 hover:text-white transition-all shadow-sm group"
-              title="Access Jakariya's Mart Admin Panel"
-            >
-              <Shield className="w-3.5 h-3.5 text-[#13487E] group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">Admin Panel</span>
             </button>
 
             {/* Cart Button with Count Badge */}

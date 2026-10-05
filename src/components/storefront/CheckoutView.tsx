@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   User,
   Phone,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   Truck,
+  X,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order, DeliveryPaymentMethod } from '../../types';
@@ -73,12 +74,19 @@ interface CheckoutViewProps {
 export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
   const { cart, cartTotal, settings, placeOrder, checkTrxIdExists, buyNowItem, setBuyNowItem } = useStore();
 
-  // Customer Form State (5 required fields requested by user)
+  // Customer Form State (5 fields: 4 required, 1 optional)
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [district, setDistrict] = useState('Dhaka');
   const [fullAddress, setFullAddress] = useState('');
   const [deliveryInstructions, setDeliveryInstructions] = useState('');
+
+  // Input Refs for focusing without abrupt scroll jumping
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement | null>(null);
+  const districtSelectRef = useRef<HTMLSelectElement | null>(null);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const trxInputRef = useRef<HTMLInputElement | null>(null);
 
   // Manual Delivery Charge Payment State
   const [deliveryPaymentMethod, setDeliveryPaymentMethod] = useState<DeliveryPaymentMethod>('bKash');
@@ -87,7 +95,57 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  
+  // Popup Error Modal State (pops up anywhere on screen, preventing unwanted jumps to the top)
+  const [popupError, setPopupError] = useState<{
+    title: string;
+    message: string;
+    field?: 'name' | 'phone' | 'district' | 'address' | 'trxId' | 'items' | 'general';
+  } | null>(null);
+
+  const triggerPopupError = (
+    title: string,
+    message: string,
+    field?: 'name' | 'phone' | 'district' | 'address' | 'trxId' | 'items' | 'general'
+  ) => {
+    setPopupError({ title, message, field });
+  };
+
+  const handleClosePopup = () => {
+    const targetField = popupError?.field;
+    setPopupError(null);
+
+    // Gently bring the target input into view without page jump
+    setTimeout(() => {
+      if (targetField === 'name' && nameInputRef.current) {
+        nameInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nameInputRef.current.focus({ preventScroll: true });
+      } else if (targetField === 'phone' && phoneInputRef.current) {
+        phoneInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        phoneInputRef.current.focus({ preventScroll: true });
+      } else if (targetField === 'district' && districtSelectRef.current) {
+        districtSelectRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        districtSelectRef.current.focus({ preventScroll: true });
+      } else if (targetField === 'address' && addressInputRef.current) {
+        addressInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        addressInputRef.current.focus({ preventScroll: true });
+      } else if (targetField === 'trxId' && trxInputRef.current) {
+        trxInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        trxInputRef.current.focus({ preventScroll: true });
+      }
+    }, 100);
+  };
+
+  // Close popup modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && popupError) {
+        handleClosePopup();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [popupError]);
 
   // Compute Subtotal & Items based on whether it's a Buy Now or Cart Checkout
   const activeItems = buyNowItem
@@ -128,57 +186,113 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
 
-    // 1. Name validation
-    if (!fullName.trim() || fullName.trim().length < 2) {
-      setErrorMsg('Please enter your full name (আপনার নাম লিখুন)।');
+    // 0. Active Items validation
+    if (activeItems.length === 0) {
+      triggerPopupError(
+        'কার্ট খালি (No Items in Cart)',
+        'অর্ডার সম্পন্ন করতে অনুগ্রহ করে অন্তত একটি পণ্য কার্টে যোগ করুন বা Buy Now নির্বাচন করুন।',
+        'items'
+      );
       return;
     }
 
-    // 2. Phone validation
+    // 1. Name validation (Required)
+    if (!fullName.trim()) {
+      triggerPopupError(
+        'নাম প্রদান করুন (Full Name Required)',
+        'অনুগ্রহ করে আপনার পুরো নাম লিখুন। নাম ছাড়া অর্ডার সম্পন্ন করা সম্ভব নয়।',
+        'name'
+      );
+      return;
+    }
+
+    if (fullName.trim().length < 2) {
+      triggerPopupError(
+        'সঠিক নাম লিখুন (Invalid Name)',
+        'অনুগ্রহ করে কমপক্ষে ২ অক্ষরের একটি সঠিক পূর্ণাঙ্গ নাম লিখুন।',
+        'name'
+      );
+      return;
+    }
+
+    // 2. Phone validation (Required)
     if (!phone.trim()) {
-      setErrorMsg('Please enter your 11-digit mobile number (মোবাইল নম্বর দিন)।');
+      triggerPopupError(
+        'মোবাইল নম্বর প্রদান করুন (Phone Required)',
+        'ডেলিভারি যোগাযোগের জন্য আপনার ১১ ডিজিটের সচল মোবাইল নম্বর দিন।',
+        'phone'
+      );
       return;
     }
 
     if (!isValidBdPhone(phone.trim())) {
-      setErrorMsg('Invalid Bangladesh mobile number. Please use a valid 11-digit number (e.g. 01712345678).');
+      triggerPopupError(
+        'সঠিক মোবাইল নম্বর দিন (Invalid Mobile Number)',
+        'অনুগ্রহ করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 01712345678 বা 018...)।',
+        'phone'
+      );
       return;
     }
 
-    // 3. District validation
+    // 3. District validation (Required)
     if (!district) {
-      setErrorMsg('Please select your District (জেলা নির্বাচন করুন)।');
+      triggerPopupError(
+        'জেলা নির্বাচন করুন (District Required)',
+        'ডেলিভারি চার্জ নির্ধারণের জন্য আপনার জেলা নির্বাচন করুন।',
+        'district'
+      );
       return;
     }
 
-    // 4. Full Delivery Address validation
-    if (!fullAddress.trim() || fullAddress.trim().length < 5) {
-      setErrorMsg('Please provide a complete delivery address (সম্পূর্ণ ঠিকানা দিন)।');
+    // 4. Full Delivery Address validation (Required)
+    if (!fullAddress.trim()) {
+      triggerPopupError(
+        'ডেলিভারি ঠিকানা দিন (Address Required)',
+        'পার্সেল পৌঁছানোর জন্য আপনার সম্পূর্ণ ডেলিভারি ঠিকানা (বাসা/রোড, এলাকা, থানা) লিখুন।',
+        'address'
+      );
       return;
     }
 
-    if (activeItems.length === 0) {
-      setErrorMsg('No items in checkout. Please select a product or add items to cart.');
+    if (fullAddress.trim().length < 5) {
+      triggerPopupError(
+        'পূর্ণাঙ্গ ঠিকানা দিন (Incomplete Address)',
+        'অনুগ্রহ করে আরও বিস্তারিত ডেলিভারি ঠিকানা প্রদান করুন (কমপক্ষে ৫ অক্ষর)।',
+        'address'
+      );
       return;
     }
 
-    // 5. Manual Delivery Charge Payment validation (Transaction ID)
+    // Note: deliveryInstructions is OPTIONAL - intentionally skipped from blocking validation!
+
+    // 5. Manual Delivery Charge Payment validation (Transaction ID - Required)
     const cleanTrxId = transactionId.trim().toUpperCase();
     if (!cleanTrxId) {
-      setErrorMsg('অনুগ্রহ করে bKash বা Nagad-এ ডেলিভারি চার্জ পাঠানোর পর Transaction ID (TrxID) দিন।');
+      triggerPopupError(
+        'Transaction ID (TrxID) দিন',
+        `ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করতে ${deliveryPaymentMethod}-এ ডেলিভারি চার্জ (${formatBDT(deliveryFee)}) পাঠানোর পর পাওয়া TrxID টি দিন।`,
+        'trxId'
+      );
       return;
     }
 
     if (cleanTrxId.length < 4) {
-      setErrorMsg('অনুগ্রহ করে একটি সঠিক ও পূর্ণাঙ্গ Transaction ID দিন (কমপক্ষে ৪ অক্ষর)।');
+      triggerPopupError(
+        'সঠিক TrxID দিন (Invalid TrxID)',
+        'অনুগ্রহ করে একটি সঠিক ও পূর্ণাঙ্গ Transaction ID দিন (কমপক্ষে ৪ অক্ষর)।',
+        'trxId'
+      );
       return;
     }
 
     // Check duplicate TrxID
     if (checkTrxIdExists(cleanTrxId)) {
-      setErrorMsg(`এই Transaction ID (${cleanTrxId}) ইতিমধ্যে অন্য একটি অর্ডারে ব্যবহার করা হয়েছে।`);
+      triggerPopupError(
+        'ব্যবহৃত Transaction ID (Duplicate TrxID)',
+        `এই Transaction ID (${cleanTrxId}) ইতিমধ্যে অন্য একটি অর্ডারে ব্যবহার করা হয়েছে। দয়া করে সঠিক TrxID দিন।`,
+        'trxId'
+      );
       return;
     }
 
@@ -229,7 +343,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
       setCreatedOrder(order);
       setBuyNowItem(null);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to place order. Please try again.');
+      triggerPopupError(
+        'অর্ডার সম্পন্ন করা যায়নি (Submission Failed)',
+        err?.message || 'অর্ডার সম্পন্ন করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।',
+        'general'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -335,14 +453,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
               </h1>
             </div>
 
-            {errorMsg && (
-              <div className="p-3.5 rounded-xl bg-red-950/70 border border-red-800 text-red-200 text-xs font-medium flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400 mt-0.5" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} noValidate className="space-y-6">
               {/* Order Summary Box */}
               <div className="p-4 sm:p-5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
@@ -416,12 +527,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       1. Name (আপনার নাম) <span className="text-[#13487E]">*</span>
                     </label>
                     <input
+                      ref={nameInputRef}
                       type="text"
-                      required
                       placeholder="e.g. Asif Mahmud"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-[#13487E]"
+                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all ${
+                        popupError?.field === 'name'
+                          ? 'border-red-500 ring-2 ring-red-500/20'
+                          : 'border-neutral-800 focus:border-[#13487E]'
+                      }`}
                     />
                   </div>
 
@@ -432,12 +547,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                     </label>
                     <div className="relative">
                       <input
+                        ref={phoneInputRef}
                         type="tel"
-                        required
                         placeholder="01712345678"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pl-10 text-sm font-mono text-white placeholder-neutral-600 focus:outline-none focus:border-[#13487E]"
+                        className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 pl-10 text-sm font-mono text-white placeholder-neutral-600 focus:outline-none transition-all ${
+                          popupError?.field === 'phone'
+                            ? 'border-red-500 ring-2 ring-red-500/20'
+                            : 'border-neutral-800 focus:border-[#13487E]'
+                        }`}
                       />
                       <Phone className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3.5" />
                     </div>
@@ -449,9 +568,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       3. District (জেলা) <span className="text-[#13487E]">*</span>
                     </label>
                     <select
+                      ref={districtSelectRef}
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-[#13487E]"
+                      className={`w-full bg-neutral-950 border rounded-xl px-3.5 py-3 text-xs sm:text-sm text-white focus:outline-none transition-all ${
+                        popupError?.field === 'district'
+                          ? 'border-red-500 ring-2 ring-red-500/20'
+                          : 'border-neutral-800 focus:border-[#13487E]'
+                      }`}
                     >
                       {ALL_BD_DISTRICTS.map((d) => (
                         <option key={d} value={d}>
@@ -467,12 +591,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       4. Full Delivery Address (সম্পূর্ণ ঠিকানা) <span className="text-[#13487E]">*</span>
                     </label>
                     <input
+                      ref={addressInputRef}
                       type="text"
-                      required
                       placeholder="House/Holding, Road, Area, Thana / Post Office"
                       value={fullAddress}
                       onChange={(e) => setFullAddress(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-[#13487E]"
+                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all ${
+                        popupError?.field === 'address'
+                          ? 'border-red-500 ring-2 ring-red-500/20'
+                          : 'border-neutral-800 focus:border-[#13487E]'
+                      }`}
                     />
                   </div>
 
@@ -608,12 +736,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                   </label>
                   <div className="relative">
                     <input
+                      ref={trxInputRef}
                       type="text"
-                      required
                       value={transactionId}
                       onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
                       placeholder="e.g. 9K382J879L"
-                      className="w-full bg-neutral-950 border border-neutral-700 focus:border-[#13487E] rounded-xl px-4 py-3 text-base font-mono font-bold text-amber-300 placeholder-neutral-600 focus:outline-none uppercase"
+                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-base font-mono font-bold text-amber-300 placeholder-neutral-600 focus:outline-none uppercase transition-all ${
+                        popupError?.field === 'trxId'
+                          ? 'border-red-500 ring-2 ring-red-500/20'
+                          : 'border-neutral-700 focus:border-[#13487E]'
+                      }`}
                     />
                     <ShieldCheck className="w-5 h-5 text-neutral-500 absolute right-4 top-3.5" />
                   </div>
@@ -663,7 +795,60 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
             </form>
           </div>
         )}
-      </main>
+
+      {/* Missing Required Field Popup Error Modal */}
+      {popupError && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={handleClosePopup}
+        >
+          <div
+            className="relative w-full max-w-md bg-[#0f0f16] border border-amber-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl text-center space-y-4 shadow-black/90"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button top-right */}
+            <button
+              type="button"
+              onClick={handleClosePopup}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+              aria-label="Close error popup"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Glowing Alert Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/15">
+              <AlertCircle className="w-8 h-8 text-amber-400 animate-pulse" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+                প্রয়োজনীয় তথ্য অসম্পূর্ণ
+              </div>
+              <h3 className="text-xl font-black text-white font-['Space_Grotesk'] tracking-tight">
+                {popupError.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
+                {popupError.message}
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleClosePopup}
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-600 to-[#13487E] hover:from-amber-500 hover:to-[#175697] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#13487E]/30 cursor-pointer"
+                autoFocus
+              >
+                ঠিক আছে, পূরণ করছি
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
 
       <StoreFooter
         onNavigate={onNavigate}
