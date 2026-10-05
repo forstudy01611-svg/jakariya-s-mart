@@ -1,0 +1,8 @@
+{
+  "name": "Jakariya's Mart - E-Commerce & Admin Suite",
+  "description": "Jakariya's Mart official streetwear & fashion store with a dedicated black and blue admin management dashboard for products, categories, orders, customers, banners, and settings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

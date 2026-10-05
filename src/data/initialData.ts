@@ -1,0 +1,261 @@
+import { Product, Category, Banner, StoreSettings, Order, DeliveryPayment } from '../types';
+
+export const INITIAL_CATEGORIES: Category[] = [
+  {
+    id: 'cat-1',
+    name: 'T-Shirts & Oversized',
+    slug: 't-shirts',
+    description: 'Heavyweight graphic anime and cyberpunk tees crafted with 260 GSM combed cotton.',
+    image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
+    is_active: true,
+    display_order: 1,
+    created_at: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'cat-2',
+    name: 'Hoodies & Sweatshirts',
+    slug: 'hoodies',
+    description: 'Cozy embroidered streetwear hoodies, fleece lined with drop shoulder cut.',
+    image_url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80',
+    is_active: true,
+    display_order: 2,
+    created_at: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'cat-3',
+    name: 'Jackets & Outerwear',
+    slug: 'jackets',
+    description: 'Tactical techwear bombers, utility parkas, and windbreakers.',
+    image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80',
+    is_active: true,
+    display_order: 3,
+    created_at: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'cat-4',
+    name: 'Cargo & Pants',
+    slug: 'pants',
+    description: 'Multi-pocket tactical cargos and relaxed fit street trousers.',
+    image_url: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=900&auto=format&fit=crop&q=80',
+    is_active: true,
+    display_order: 4,
+    created_at: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'cat-5',
+    name: 'Accessories & Caps',
+    slug: 'accessories',
+    description: 'Embroidered dad caps, utility crossbody bags, and signature stickers.',
+    image_url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&auto=format&fit=crop&q=80',
+    is_active: true,
+    display_order: 5,
+    created_at: '2026-01-10T10:00:00Z',
+  },
+];
+
+export const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: 'prod-1',
+    name: "Jakariya's Mart Cyber-Ronin Oversized Tee",
+    description: "Signature Jakariya's Mart heavyweight 260 GSM acid-wash black tee featuring high-density neo-Tokyo ronin artwork on the back and subtle blue chest typography.",
+    price: 1450,
+    discount_price: 1250,
+    category_id: 'cat-1',
+    stock: 45,
+    sku: 'JM-TEE-001',
+    images: [
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=900&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: true,
+    is_active: true,
+    created_at: '2026-01-15T12:00:00Z',
+    updated_at: '2026-01-15T12:00:00Z',
+  },
+  {
+    id: 'prod-2',
+    name: "Jakariya's Mart Neo-Tokyo Heavyweight Hoodie",
+    description: 'Blacked-out 450 GSM French terry hoodie with custom high-contrast blue drawstrings, kangaroo pocket, and metallic insignia.',
+    price: 2850,
+    discount_price: 2499,
+    category_id: 'cat-2',
+    stock: 28,
+    sku: 'JM-HD-002',
+    images: [
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=900&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: true,
+    is_active: true,
+    created_at: '2026-01-16T10:00:00Z',
+    updated_at: '2026-01-16T10:00:00Z',
+  },
+  {
+    id: 'prod-3',
+    name: "Jakariya's Mart Tactical Wind Bomber Jacket",
+    description: 'Matte black weatherproof nylon exterior with thermal quilted blue lining, military zippers, removable utility arm band, and hidden tech compartments.',
+    price: 4450,
+    discount_price: 3850,
+    category_id: 'cat-3',
+    stock: 16,
+    sku: 'JM-JKT-003',
+    images: [
+      'https://images.unsplash.com/photo-1544441893-675973e31985?w=900&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: true,
+    is_active: true,
+    created_at: '2026-01-17T14:30:00Z',
+    updated_at: '2026-01-17T14:30:00Z',
+  },
+  {
+    id: 'prod-4',
+    name: "Jakariya's Mart Modular Pocket Cargo Pants",
+    description: 'Durable ripstop cotton cargo pants with 8 multi-purpose tactical pockets, adjustable strap cuffs, and reinforced knee articulation in pitch black.',
+    price: 2250,
+    discount_price: null,
+    category_id: 'cat-4',
+    stock: 22,
+    sku: 'JM-PNT-004',
+    images: [
+      'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=900&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: false,
+    is_active: true,
+    created_at: '2026-01-18T09:15:00Z',
+    updated_at: '2026-01-18T09:15:00Z',
+  },
+  {
+    id: 'prod-5',
+    name: "Jakariya's Mart Signature Embroidered Cap",
+    description: 'Structured 6-panel unstructured dad cap featuring embossed blue Jakariya\'s Mart Kanji lettering on the crown and quick-cinel metal buckle.',
+    price: 750,
+    discount_price: 650,
+    category_id: 'cat-5',
+    stock: 50,
+    sku: 'JM-CAP-005',
+    images: [
+      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: true,
+    is_active: true,
+    created_at: '2026-01-19T11:00:00Z',
+    updated_at: '2026-01-19T11:00:00Z',
+  },
+  {
+    id: 'prod-6',
+    name: "Jakariya's Mart Acid-Washed Ghost Graphic Tee",
+    description: 'Vintage mineral washed 100% carded cotton tee with oversized boxy silhouette, ribbed neckline, and monochrome anime specter print.',
+    price: 1350,
+    discount_price: 1150,
+    category_id: 'cat-1',
+    stock: 35,
+    sku: 'JM-TEE-006',
+    images: [
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=900&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
+    ],
+    is_featured: false,
+    is_active: true,
+    created_at: '2026-01-20T16:20:00Z',
+    updated_at: '2026-01-20T16:20:00Z',
+  },
+  {
+    id: 'prod-7',
+    name: "Jakariya's Mart Tactical Sling Crossbody Bag",
+    description: 'Compact water-resistant ballistic cordura crossbody bag featuring blue carabiner hardware, multiple compartments, and Fidlock quick-release buckle.',
+    price: 1150,
+    discount_price: 950,
+    category_id: 'cat-5',
+    stock: 30,
+    sku: 'JM-BAG-007',
+    images: [
+      'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: true,
+    is_active: true,
+    created_at: '2026-01-21T08:45:00Z',
+    updated_at: '2026-01-21T08:45:00Z',
+  },
+  {
+    id: 'prod-8',
+    name: "Jakariya's Mart Shadow Zip-Up Tech Fleece",
+    description: 'Ergonomic dual-zipper tech fleece jacket with blue contrast seam taping, thumbhole storm cuffs, and breathable side panels.',
+    price: 3200,
+    discount_price: 2850,
+    category_id: 'cat-2',
+    stock: 12,
+    sku: 'JM-HD-008',
+    images: [
+      'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=900&auto=format&fit=crop&q=80',
+    ],
+    is_featured: false,
+    is_active: true,
+    created_at: '2026-01-22T13:10:00Z',
+    updated_at: '2026-01-22T13:10:00Z',
+  },
+];
+
+export const INITIAL_BANNERS: Banner[] = [
+  {
+    id: 'ban-1',
+    title: "WELCOME TO JAKARIYA'S MART",
+    subtitle: 'Premium Streetwear & Anime Apparel with Cash on Delivery all across Bangladesh.',
+    image_url: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=1600&auto=format&fit=crop&q=80',
+    button_text: 'Explore Drop 01',
+    button_url: '#catalog',
+    is_active: true,
+    display_order: 1,
+  },
+  {
+    id: 'ban-2',
+    title: 'NEO-TOKYO TECHWEAR COLLECTION',
+    subtitle: 'Limited edition oversized hoodies & modular cargo trousers built for urban dominance.',
+    image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=1600&auto=format&fit=crop&q=80',
+    button_text: 'Shop Hoodies & Outerwear',
+    button_url: '#catalog',
+    is_active: true,
+    display_order: 2,
+  },
+];
+
+export const INITIAL_SETTINGS: StoreSettings = {
+  store_name: "Jakariya's Mart",
+  tagline: 'Modern Streetwear & Anime Apparel - Bangladesh',
+  logo_url: '',
+  phone: '+880 1700-123456',
+  email: 'support@jakariyasmart.com',
+  address: 'House 14, Road 11, Block D, Banani, Dhaka-1213, Bangladesh',
+  delivery_charge: 80, // Inside Dhaka District
+  delivery_charge_outside: 120, // Outside Dhaka District
+  currency_symbol: '৳',
+  announcement: 'CASH ON DELIVERY (COD) AVAILABLE ALL OVER BANGLADESH | FAST 48H COURIER',
+  announcement_enabled: true,
+  bkash_number: '01700-123456',
+  bkash_type: 'Personal (Send Money)',
+  nagad_number: '01800-123456',
+  nagad_type: 'Personal (Send Money)',
+  payment_instructions: 'COD order confirm করতে উপরে দেওয়া নম্বরে Delivery Charge Send Money করুন এবং নিচের বক্সে Transaction ID দিন।',
+  delivery_policy_enabled: true,
+  delivery_policy_text: `Return Policy:
+1️⃣ প্রোডাক্ট হাতে পাওয়ার সময় অবশ্যই Unboxing Video করতে হবে।
+2️⃣ যদি কোনো সমস্যা থাকে, তাহলে সেই Unboxing Video সহ আমাদের জানাতে হবে।
+3️⃣ ভিডিও ছাড়া কোনো ধরনের ক্লেইম গ্রহণযোগ্য হবে না।
+4️⃣ সমস্যার প্রমাণ নিশ্চিত হওয়ার পর, সর্বোচ্চ ৭ দিনের মধ্যে এক্সচেঞ্জ করা হবে।
+
+🚚 এক্সচেঞ্জ প্রসেস:
+✅ আমরা ডেলিভারি ম্যানের মাধ্যমে নতুন প্রোডাক্ট পাঠিয়ে দেব।
+✅ কাস্টোমারকে নষ্ট/সমস্যাযুক্ত প্রোডাক্টটি ভালোভাবে প্যাকেজিং করে ডেলিভারি ম্যানের কাছে দিতে হবে।
+✅ পণ্যে কোনো সমস্যা হলে সেটি এক্সচেঞ্জ করার ক্ষেত্রে এক্সচেঞ্জ ফি ও ডেলিভারি চার্জের সম্পূর্ণ দায়িত্ব Jakariya's Mart বহন করবে।`,
+  social_links: {
+    facebook: 'https://facebook.com/jakariyasmart',
+    instagram: 'https://instagram.com/jakariyasmart',
+    tiktok: 'https://tiktok.com/@jakariyasmart',
+    youtube: 'https://youtube.com/@jakariyasmart',
+  },
+};
+
+export const INITIAL_ORDERS: Order[] = [];
+
+export const INITIAL_DELIVERY_PAYMENTS: DeliveryPayment[] = [];
