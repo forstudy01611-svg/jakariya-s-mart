@@ -27,11 +27,15 @@ CREATE TABLE IF NOT EXISTS public.products (
     stock INTEGER DEFAULT 0,
     sku TEXT,
     images JSONB DEFAULT '[]'::jsonb,
+    variants JSONB DEFAULT '[]'::jsonb,
     is_featured BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration for existing products table
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variants JSONB DEFAULT '[]'::jsonb;
 
 -- 3. Orders Table (Bangladesh Delivery & COD Specification)
 CREATE TABLE IF NOT EXISTS public.orders (

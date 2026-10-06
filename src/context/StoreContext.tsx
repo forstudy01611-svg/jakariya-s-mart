@@ -828,9 +828,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('products').insert([newProduct]);
-      } catch (err) {
-        console.warn('Could not insert product into Supabase:', err);
+        const { error: insertErr } = await supabase.from('products').insert([newProduct]);
+        if (insertErr) throw insertErr;
+      } catch (err: any) {
+        console.error('Failed to insert product into Supabase:', err);
+        throw new Error(err?.message || 'Failed to save product to database. Ensure schema is updated.');
       }
     }
 
@@ -861,12 +863,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase
+        const { error: updateErr } = await supabase
           .from('products')
           .update({ ...updates, updated_at: new Date().toISOString() })
           .eq('id', id);
-      } catch (err) {
-        console.warn('Could not update product in Supabase:', err);
+        if (updateErr) throw updateErr;
+      } catch (err: any) {
+        console.error('Could not update product in Supabase:', err);
+        throw new Error(err?.message || 'Failed to update product in database.');
       }
     }
 
