@@ -7,7 +7,7 @@ import { formatBDT } from '../../utils/bangladesh';
 interface ProductDetailModalProps {
   product: Product | null;
   onClose: () => void;
-  onBuyNow: (product: Product, quantity: number) => void;
+  onBuyNow: (product: Product, quantity: number, selected_variants?: Record<string, string>) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -19,6 +19,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [variantError, setVariantError] = useState<string | null>(null);
 
   if (!product) return null;
 
@@ -28,12 +30,43 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
-    addToCart(product, quantity);
+    
+    // Validate variants
+    if (product.variants && product.variants.length > 0) {
+      const missingVariants = product.variants.filter(v => !selectedVariants[v.name]);
+      if (missingVariants.length > 0) {
+        setVariantError(`অনুগ্রহ করে ${missingVariants.map(v => v.name).join(', ')} সিলেক্ট করুন।`);
+        return;
+      }
+    }
+
+    addToCart(product, quantity, selectedVariants);
     setAdded(true);
+    setVariantError(null);
     setTimeout(() => {
       setAdded(false);
       onClose();
     }, 900);
+  };
+
+  const handleBuyNowClick = () => {
+    if (isOutOfStock) return;
+
+    // Validate variants
+    if (product.variants && product.variants.length > 0) {
+      const missingVariants = product.variants.filter(v => !selectedVariants[v.name]);
+      if (missingVariants.length > 0) {
+        setVariantError(`অনুগ্রহ করে ${missingVariants.map(v => v.name).join(', ')} সিলেক্ট করুন।`);
+        return;
+      }
+    }
+
+    onBuyNow(product, quantity, selectedVariants);
+  };
+
+  const handleSelectVariant = (variantName: string, option: string) => {
+    setSelectedVariants(prev => ({ ...prev, [variantName]: option }));
+    if (variantError) setVariantError(null);
   };
 
   return (
@@ -139,7 +172,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         {v.options.map((opt) => (
                           <button
                             key={opt}
-                            className="px-3 py-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-xs font-bold text-neutral-300 hover:border-[#13487E] hover:text-white transition-all focus:border-[#13487E] focus:ring-1 focus:ring-[#13487E]/30"
+                            onClick={() => handleSelectVariant(v.name, opt)}
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                              selectedVariants[v.name] === opt
+                                ? 'bg-[#13487E] border-[#13487E] text-white shadow-lg shadow-[#13487E]/20'
+                                : 'bg-neutral-950 border-neutral-800 text-neutral-300 hover:border-[#13487E] hover:text-white'
+                            }`}
                           >
                             {opt}
                           </button>
@@ -147,6 +185,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Variant Error Message */}
+              {variantError && (
+                <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-900/60 flex items-center gap-2 text-red-400 text-[11px] font-bold animate-pulse">
+                  <X className="w-3.5 h-3.5" />
+                  <span>{variantError}</span>
                 </div>
               )}
 
@@ -226,7 +272,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Buy Now Button (Recommended) */}
                 <button
-                  onClick={() => onBuyNow(product, quantity)}
+                  onClick={handleBuyNowClick}
                   disabled={isOutOfStock}
                   className={`w-full py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     isOutOfStock

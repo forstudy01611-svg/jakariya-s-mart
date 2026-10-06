@@ -74,7 +74,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                 return (
                   <div
-                    key={item.product.id}
+                    key={item.id}
                     className="flex gap-4 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 group"
                   >
                     {/* Thumbnail */}
@@ -89,11 +89,22 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     {/* Details */}
                     <div className="flex-1 flex flex-col justify-between">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-bold text-white line-clamp-1">
-                          {item.product.name}
-                        </h4>
+                        <div>
+                          <h4 className="text-sm font-bold text-white line-clamp-1">
+                            {item.product.name}
+                          </h4>
+                          {item.selected_variants && Object.entries(item.selected_variants).length > 0 && (
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                              {Object.entries(item.selected_variants).map(([key, value]) => (
+                                <span key={key} className="text-[10px] text-neutral-400 font-medium">
+                                  {key}: <span className="text-neutral-200">{value}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <button
-                          onClick={() => removeFromCart(item.product.id)}
+                          onClick={() => removeFromCart(item.id)}
                           className="text-neutral-500 hover:text-red-400 p-1"
                           title="Remove item"
                           aria-label="Remove item"
@@ -110,7 +121,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <div className="flex items-center justify-between pt-1">
                         <div className="flex items-center border border-neutral-700 rounded-md bg-neutral-950">
                           <button
-                            onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
                             className="p-1 text-neutral-400 hover:text-white"
                             aria-label="Decrease quantity"
                           >
@@ -120,7 +131,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
                             disabled={item.quantity >= item.product.stock}
                             className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
                             aria-label="Increase quantity"

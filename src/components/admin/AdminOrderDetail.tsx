@@ -177,7 +177,16 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
                     <h3 className="text-sm font-bold text-white truncate">
                       {item.product_name}
                     </h3>
-                    <div className="text-xs text-neutral-400 mt-0.5">
+                    {item.selected_variants && Object.entries(item.selected_variants).length > 0 && (
+                      <div className="flex flex-wrap gap-x-2 mt-0.5">
+                        {Object.entries(item.selected_variants).map(([k, v]) => (
+                          <span key={k} className="text-[10px] text-neutral-400 font-medium">
+                            {k}: <span className="text-neutral-200">{v}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-xs text-neutral-400 mt-1">
                       Quantity: <strong className="text-white">{item.quantity}</strong> × {formatBDT(item.price)}
                     </div>
                   </div>

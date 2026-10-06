@@ -9,7 +9,7 @@ import { StoreFooter } from './StoreFooter';
 import { useStore } from '../../context/StoreContext';
 import { Product, Order } from '../../types';
 import { SlidersHorizontal, Sparkles, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface StorefrontViewProps {
   onNavigate: (route: string) => void;
@@ -64,8 +64,8 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
 
   const { setBuyNowItem } = useStore();
 
-  const handleBuyNow = (product: Product, quantity: number) => {
-    setBuyNowItem({ product, quantity });
+  const handleBuyNow = (product: Product, quantity: number, selected_variants?: Record<string, string>) => {
+    setBuyNowItem({ product, quantity, selected_variants });
     setSelectedProduct(null);
     onNavigate('/checkout');
   };

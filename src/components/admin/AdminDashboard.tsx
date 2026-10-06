@@ -14,9 +14,8 @@ import {
   ArrowUpRight,
   TrendingUp,
   AlertTriangle,
-  Eye,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus } from '../../types';
 import { formatBDT } from '../../utils/bangladesh';
@@ -183,30 +182,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             }
           }
         }}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5"
       >
-        {/* Site Views */}
-        <motion.div 
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
-          }}
-          className="p-4 rounded-2xl bg-[#0d0d12] border border-[#13487E]/30 space-y-2"
-        >
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-bold uppercase tracking-wider">Site Views</span>
-            <div className="p-1.5 rounded-lg bg-[#13487E]/20 text-[#13487E]">
-              <Eye className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-white font-['Space_Grotesk']">
-            {settings.site_views || 0}
-          </div>
-          <div className="text-[11px] text-[#13487E] font-medium">
-            Total visitors
-          </div>
-        </motion.div>
-
         {/* Total Sales */}
         <motion.div 
           variants={{

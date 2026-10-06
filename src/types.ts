@@ -66,6 +66,7 @@ export interface OrderItem {
   quantity: number;
   price: number;
   subtotal: number;
+  selected_variants?: Record<string, string>; // e.g., {"Size": "M", "Color": "Blue"}
 }
 
 export interface Order {
@@ -144,12 +145,13 @@ export interface StoreSettings {
     tiktok: string;
     youtube: string;
   };
-  site_views: number;
 }
 
 export interface CartItem {
+  id: string; // Unique ID for cart item (product_id + variants hash)
   product: Product;
   quantity: number;
+  selected_variants?: Record<string, string>;
 }
 
 export interface AdminUser {

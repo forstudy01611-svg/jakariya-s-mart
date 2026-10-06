@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Truck,
   X,
+  Download,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order, DeliveryPaymentMethod } from '../../types';
@@ -154,12 +155,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
           product: buyNowItem.product,
           quantity: buyNowItem.quantity,
           subtotal: (buyNowItem.product.discount_price ?? buyNowItem.product.price) * buyNowItem.quantity,
+          selected_variants: buyNowItem.selected_variants,
         },
       ]
     : cart.map((item) => ({
         product: item.product,
         quantity: item.quantity,
         subtotal: (item.product.discount_price ?? item.product.price) * item.quantity,
+        selected_variants: item.selected_variants,
       }));
 
   const activeSubtotal = buyNowItem
@@ -314,6 +317,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
           quantity: item.quantity,
           price: unitPrice,
           subtotal: unitPrice * item.quantity,
+          selected_variants: item.selected_variants,
         };
       });
 
@@ -429,11 +433,98 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
+                onClick={() => window.print()}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs uppercase tracking-wider transition-all border border-neutral-700 flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Invoice (ইভয়েস ডাউনলোড)</span>
+              </button>
+              <button
                 onClick={() => onNavigate('/')}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#13487E]/25"
               >
                 Continue Shopping
               </button>
+            </div>
+
+            {/* Hidden Invoice for Printing */}
+            <div className="hidden print:block print:text-black bg-white p-8 text-left text-sm" id="printable-invoice">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h1 className="text-3xl font-black uppercase text-[#13487E]">{settings.store_name}</h1>
+                  <p className="text-gray-600 mt-1">{settings.tagline}</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-xl font-bold uppercase">INVOICE</h2>
+                  <p className="text-gray-600">#{createdOrder.id}</p>
+                  <p className="text-gray-600">{new Date(createdOrder.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 mb-8 border-t border-b border-gray-100 py-6">
+                <div>
+                  <h3 className="font-bold text-gray-400 uppercase text-[10px] mb-2 tracking-widest">Bill To</h3>
+                  <p className="font-bold text-lg">{createdOrder.customer_name}</p>
+                  <p className="text-gray-600">{createdOrder.customer_phone}</p>
+                  <p className="text-gray-600 mt-1">{createdOrder.customer_address}, {createdOrder.district}</p>
+                </div>
+                <div className="text-right">
+                  <h3 className="font-bold text-gray-400 uppercase text-[10px] mb-2 tracking-widest">Store Info</h3>
+                  <p className="font-bold">{settings.store_name}</p>
+                  <p className="text-gray-600">{settings.phone}</p>
+                  <p className="text-gray-600">{settings.address}</p>
+                </div>
+              </div>
+
+              <table className="w-full mb-8">
+                <thead>
+                  <tr className="border-b-2 border-gray-800 text-left">
+                    <th className="py-3 font-black uppercase text-xs">Item Description</th>
+                    <th className="py-3 font-black uppercase text-xs text-center">Qty</th>
+                    <th className="py-3 font-black uppercase text-xs text-right">Price</th>
+                    <th className="py-3 font-black uppercase text-xs text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {createdOrder.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="py-4">
+                        <p className="font-bold text-base">{item.product_name}</p>
+                        {item.selected_variants && Object.entries(item.selected_variants).map(([k, v]) => (
+                          <span key={k} className="text-xs text-gray-500 mr-3 italic">{k}: {v}</span>
+                        ))}
+                      </td>
+                      <td className="py-4 text-center">{item.quantity}</td>
+                      <td className="py-4 text-right font-mono">{formatBDT(item.price)}</td>
+                      <td className="py-4 text-right font-bold font-mono">{formatBDT(item.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="flex justify-end">
+                <div className="w-64 space-y-3">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal</span>
+                    <span className="font-mono">{formatBDT(createdOrder.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Delivery Charge ({createdOrder.delivery_payment_method})</span>
+                    <span className="font-mono">{formatBDT(createdOrder.delivery_charge)}</span>
+                  </div>
+                  <div className="flex justify-between pt-3 border-t-2 border-gray-800 font-black text-xl text-[#13487E]">
+                    <span>TOTAL DUE</span>
+                    <span className="font-mono">{formatBDT(createdOrder.total)}</span>
+                  </div>
+                  <div className="pt-2 text-[10px] text-gray-400 text-right uppercase tracking-widest italic">
+                    Cash on Delivery
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-20 pt-8 border-t border-gray-100 text-center text-gray-400 text-xs uppercase tracking-widest">
+                Thank you for choosing {settings.store_name}
+              </div>
             </div>
           </div>
         ) : (
@@ -480,7 +571,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-xs sm:text-sm font-bold text-white truncate">{item.product.name}</h4>
-                          <div className="text-xs text-neutral-400 font-mono">
+                          {item.selected_variants && Object.entries(item.selected_variants).length > 0 && (
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                              {Object.entries(item.selected_variants).map(([k, v]) => (
+                                <span key={k} className="text-[10px] text-neutral-400">
+                                  {k}: <span className="text-neutral-200">{v}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-neutral-500 font-mono mt-1">
                             {item.quantity} × {formatBDT(itemPrice)}
                           </div>
                         </div>

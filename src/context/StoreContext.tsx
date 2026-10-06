@@ -48,9 +48,9 @@ interface StoreContextType {
   error: string | null;
 
   // Cart operations
-  addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number, selected_variants?: Record<string, string>) => void;
+  removeFromCart: (cartItemId: string) => void;
+  updateCartQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
@@ -75,6 +75,7 @@ interface StoreContextType {
       quantity: number;
       price: number;
       subtotal: number;
+      selected_variants?: Record<string, string>;
     }[];
     subtotal: number;
     delivery_charge: number;
@@ -110,7 +111,6 @@ interface StoreContextType {
 
   // Settings
   updateSettings: (updates: Partial<StoreSettings>) => Promise<void>;
-  incrementSiteViews: () => void;
 
   // Media upload
   uploadImage: (file: File) => Promise<string>;
@@ -122,8 +122,8 @@ interface StoreContextType {
   resetToDemoData: () => void;
   syncAllToSupabase: () => Promise<{ success: boolean; message: string }>;
   sendPasswordReset: (emailToReset?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
-  buyNowItem: { product: Product; quantity: number } | null;
-  setBuyNowItem: (item: { product: Product; quantity: number } | null) => void;
+  buyNowItem: { product: Product; quantity: number; selected_variants?: Record<string, string> } | null;
+  setBuyNowItem: (item: { product: Product; quantity: number; selected_variants?: Record<string, string> } | null) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -456,31 +456,40 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [orders]);
 
   // Cart operations
-  const addToCart = useCallback((product: Product, quantity = 1) => {
+  const addToCart = useCallback((product: Product, quantity = 1, selected_variants?: Record<string, string>) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      // Create a unique ID for this cart item based on product ID and selected variants
+      const variantString = selected_variants ? Object.entries(selected_variants).sort().map(([k, v]) => `${k}:${v}`).join('|') : '';
+      const cartItemId = variantString ? `${product.id}-${variantString}` : product.id;
+
+      const existing = prev.find((item) => item.id === cartItemId);
       if (existing) {
         return prev.map((item) =>
-          item.product.id === product.id
+          item.id === cartItemId
             ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock || 99) }
             : item
         );
       }
-      return [...prev, { product, quantity: Math.min(quantity, product.stock || 99) }];
+      return [...prev, { 
+        id: cartItemId,
+        product, 
+        quantity: Math.min(quantity, product.stock || 99),
+        selected_variants
+      }];
     });
   }, []);
 
-  const removeFromCart = useCallback((productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeFromCart = useCallback((cartItemId: string) => {
+    setCart((prev) => prev.filter((item) => item.id !== cartItemId));
   }, []);
 
-  const updateCartQuantity = useCallback((productId: string, quantity: number) => {
+  const updateCartQuantity = useCallback((cartItemId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(cartItemId);
       return;
     }
     setCart((prev) =>
-      prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
+      prev.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
     );
   }, [removeFromCart]);
 
@@ -1296,30 +1305,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const incrementSiteViews = useCallback(async () => {
-    setSettings(prev => {
-      const newViews = (prev.site_views || 0) + 1;
-      const updated = { ...prev, site_views: newViews };
-      
-      // Update Supabase if configured
-      if (isSupabaseConfigured && supabase) {
-        supabase.from('settings').update({ site_views: newViews }).eq('id', 1).then(({ error }) => {
-          if (error) console.error('Failed to update site views in Supabase', error);
-        });
-      }
-      
-      return updated;
-    });
-  }, []);
-
-  // Increment views on mount (once per session)
-  useEffect(() => {
-    const hasVisited = sessionStorage.getItem('jakariya_mart_visited');
-    if (!hasVisited) {
-      incrementSiteViews();
-      sessionStorage.setItem('jakariya_mart_visited', 'true');
-    }
-  }, [incrementSiteViews]);
+  // Increment views on mount removed as requested
 
   return (
     <StoreContext.Provider
@@ -1379,7 +1365,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         sendPasswordReset,
         buyNowItem,
         setBuyNowItem,
-        incrementSiteViews,
       }}
     >
       {children}
