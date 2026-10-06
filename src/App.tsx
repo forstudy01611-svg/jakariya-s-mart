@@ -15,17 +15,18 @@ import { AdminBanners } from './components/admin/AdminBanners';
 import { AdminDeliveryPayments } from './components/admin/AdminDeliveryPayments';
 import { AdminSettings } from './components/admin/AdminSettings';
 import { NeonLoader } from './components/storefront/NeonLoader';
+import { ProductDetailView } from './components/storefront/ProductDetailView';
 import { AUTHORIZED_ADMIN_USERNAME } from './types';
 
 // Helper to resolve current path supporting standard pathname as well as preview hash routing
 const resolveCurrentPath = (): string => {
   if (typeof window === 'undefined') return '/';
   const hash = window.location.hash.replace(/^#\/?/, '/');
-  if (hash.startsWith('/admin') || hash.startsWith('/checkout')) {
+  if (hash.startsWith('/admin') || hash.startsWith('/checkout') || hash.startsWith('/product')) {
     return hash;
   }
-  if (window.location.pathname === '/checkout') {
-    return '/checkout';
+  if (window.location.pathname === '/checkout' || window.location.pathname.startsWith('/product')) {
+    return window.location.pathname;
   }
   return window.location.pathname || '/';
 };
@@ -117,6 +118,17 @@ const AppContent: React.FC = () => {
       <>
         <NeonLoader isLoading={showLoader} />
         <CheckoutView onNavigate={navigate} />
+      </>
+    );
+  }
+
+  // Route: Product Detail Page
+  if (currentPath.startsWith('/product/')) {
+    const productId = currentPath.split('/product/')[1];
+    return (
+      <>
+        <NeonLoader isLoading={showLoader} />
+        <ProductDetailView productId={productId} onNavigate={navigate} />
       </>
     );
   }

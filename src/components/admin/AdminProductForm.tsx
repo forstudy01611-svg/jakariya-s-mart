@@ -56,7 +56,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
         discount_price: existingProduct.discount_price !== null && existingProduct.discount_price !== undefined
           ? existingProduct.discount_price.toString()
           : '',
-        category_id: existingProduct.category_id || categories[0]?.id || '',
+        category_id: existingProduct.category_id || (categories.length > 0 ? categories[0].id : ''),
         stock: existingProduct.stock.toString(),
         sku: existingProduct.sku || '',
         is_featured: existingProduct.is_featured,
@@ -65,10 +65,14 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
       setImages(existingProduct.images || []);
       setVariants(existingProduct.variants || []);
     } else if (!isEditing && categories.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        category_id: prev.category_id || categories[0].id,
-      }));
+      // If creating a new product and no category selected, or current selection is invalid
+      setFormData((prev) => {
+        const isCurrentValid = categories.some(c => c.id === prev.category_id);
+        if (!prev.category_id || !isCurrentValid) {
+          return { ...prev, category_id: categories[0].id };
+        }
+        return prev;
+      });
     }
   }, [isEditing, existingProduct, categories]);
 
@@ -176,6 +180,11 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
     const parsedDiscountPrice = formData.discount_price.trim()
       ? parseFloat(formData.discount_price)
       : null;
+
+    if (!formData.category_id || !categories.some(c => c.id === formData.category_id)) {
+      setErrorMsg('Please select a valid category.');
+      return;
+    }
 
     setIsSubmitting(true);
 

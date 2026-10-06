@@ -6,13 +6,13 @@ import { formatBDT } from '../../utils/bangladesh';
 
 interface ProductCardProps {
   product: Product;
-  onSelectProduct: (product: Product) => void;
-  onBuyNow: (product: Product, quantity: number) => void;
+  onNavigate: (path: string) => void;
+  onBuyNow: (product: Product, quantity: number, selected_variants?: Record<string, string>) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  onSelectProduct,
+  onNavigate,
   onBuyNow,
 }) => {
   const { categories, settings, addToCart, cart } = useStore();
@@ -26,6 +26,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isOutOfStock) return;
+    
+    // If product has variants, must go to detail page to select
+    if (product.variants && product.variants.length > 0) {
+      onNavigate(`/product/${product.id}`);
+      return;
+    }
+
     addToCart(product, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
@@ -40,7 +47,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div
-      onClick={() => onSelectProduct(product)}
+      onClick={() => onNavigate(`/product/${product.id}`)}
       className="group relative bg-neutral-900/60 rounded-xl border border-neutral-800 hover:border-neutral-700 overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-black/50"
     >
       {/* Image Container */}
@@ -137,6 +144,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                if (product.variants && product.variants.length > 0) {
+                  onNavigate(`/product/${product.id}`);
+                  return;
+                }
                 onBuyNow(product, 1);
               }}
               disabled={isOutOfStock}

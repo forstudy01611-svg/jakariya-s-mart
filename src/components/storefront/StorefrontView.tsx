@@ -21,7 +21,6 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
@@ -66,7 +65,6 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
 
   const handleBuyNow = (product: Product, quantity: number, selected_variants?: Record<string, string>) => {
     setBuyNowItem({ product, quantity, selected_variants });
-    setSelectedProduct(null);
     onNavigate('/checkout');
   };
 
@@ -166,7 +164,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onSelectProduct={(p) => setSelectedProduct(p)}
+                  onNavigate={onNavigate}
                   onBuyNow={handleBuyNow}
                 />
               ))}
@@ -229,11 +227,6 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
       />
 
       {/* Modals & Drawers */}
-      <ProductDetailModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onBuyNow={handleBuyNow}
-      />
 
       <CartDrawer
         isOpen={isCartOpen}

@@ -2,7 +2,7 @@ import { Product, Category, Banner, StoreSettings, Order, DeliveryPayment } from
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
-    id: 'cat-1',
+    id: 'cat-1710000000001',
     name: 'T-Shirts & Oversized',
     slug: 't-shirts',
     description: 'Heavyweight graphic anime and cyberpunk tees crafted with 260 GSM combed cotton.',
@@ -12,7 +12,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     created_at: '2026-01-10T10:00:00Z',
   },
   {
-    id: 'cat-2',
+    id: 'cat-1710000000002',
     name: 'Hoodies & Sweatshirts',
     slug: 'hoodies',
     description: 'Cozy embroidered streetwear hoodies, fleece lined with drop shoulder cut.',
@@ -22,7 +22,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     created_at: '2026-01-10T10:00:00Z',
   },
   {
-    id: 'cat-3',
+    id: 'cat-1710000000003',
     name: 'Jackets & Outerwear',
     slug: 'jackets',
     description: 'Tactical techwear bombers, utility parkas, and windbreakers.',
@@ -32,7 +32,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     created_at: '2026-01-10T10:00:00Z',
   },
   {
-    id: 'cat-4',
+    id: 'cat-1710000000004',
     name: 'Cargo & Pants',
     slug: 'pants',
     description: 'Multi-pocket tactical cargos and relaxed fit street trousers.',
@@ -42,7 +42,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     created_at: '2026-01-10T10:00:00Z',
   },
   {
-    id: 'cat-5',
+    id: 'cat-1710000000005',
     name: 'Accessories & Caps',
     slug: 'accessories',
     description: 'Embroidered dad caps, utility crossbody bags, and signature stickers.',
@@ -60,7 +60,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: "Signature Jakariya's Mart heavyweight 260 GSM acid-wash black tee featuring high-density neo-Tokyo ronin artwork on the back and subtle blue chest typography.",
     price: 1450,
     discount_price: 1250,
-    category_id: 'cat-1',
+    category_id: 'cat-1710000000001',
     stock: 45,
     sku: 'JM-TEE-001',
     images: [
@@ -78,7 +78,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Blacked-out 450 GSM French terry hoodie with custom high-contrast blue drawstrings, kangaroo pocket, and metallic insignia.',
     price: 2850,
     discount_price: 2499,
-    category_id: 'cat-2',
+    category_id: 'cat-1710000000002',
     stock: 28,
     sku: 'JM-HD-002',
     images: [
@@ -96,7 +96,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Matte black weatherproof nylon exterior with thermal quilted blue lining, military zippers, removable utility arm band, and hidden tech compartments.',
     price: 4450,
     discount_price: 3850,
-    category_id: 'cat-3',
+    category_id: 'cat-1710000000003',
     stock: 16,
     sku: 'JM-JKT-003',
     images: [
@@ -114,7 +114,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Durable ripstop cotton cargo pants with 8 multi-purpose tactical pockets, adjustable strap cuffs, and reinforced knee articulation in pitch black.',
     price: 2250,
     discount_price: null,
-    category_id: 'cat-4',
+    category_id: 'cat-1710000000004',
     stock: 22,
     sku: 'JM-PNT-004',
     images: [
@@ -132,7 +132,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Structured 6-panel unstructured dad cap featuring embossed blue Jakariya\'s Mart Kanji lettering on the crown and quick-cinel metal buckle.',
     price: 750,
     discount_price: 650,
-    category_id: 'cat-5',
+    category_id: 'cat-1710000000005',
     stock: 50,
     sku: 'JM-CAP-005',
     images: [
@@ -149,7 +149,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Vintage mineral washed 100% carded cotton tee with oversized boxy silhouette, ribbed neckline, and monochrome anime specter print.',
     price: 1350,
     discount_price: 1150,
-    category_id: 'cat-1',
+    category_id: 'cat-1710000000001',
     stock: 35,
     sku: 'JM-TEE-006',
     images: [
@@ -167,7 +167,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Compact water-resistant ballistic cordura crossbody bag featuring blue carabiner hardware, multiple compartments, and Fidlock quick-release buckle.',
     price: 1150,
     discount_price: 950,
-    category_id: 'cat-5',
+    category_id: 'cat-1710000000005',
     stock: 30,
     sku: 'JM-BAG-007',
     images: [
@@ -184,7 +184,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Ergonomic dual-zipper tech fleece jacket with blue contrast seam taping, thumbhole storm cuffs, and breathable side panels.',
     price: 3200,
     discount_price: 2850,
-    category_id: 'cat-2',
+    category_id: 'cat-1710000000002',
     stock: 12,
     sku: 'JM-HD-008',
     images: [
