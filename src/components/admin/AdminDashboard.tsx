@@ -14,7 +14,9 @@ import {
   ArrowUpRight,
   TrendingUp,
   AlertTriangle,
+  Eye,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus } from '../../types';
 import { formatBDT } from '../../utils/bangladesh';
@@ -167,10 +169,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* 5 Primary Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      {/* 5 Primary Metrics with Staggered Animation */}
+      <motion.div 
+        initial="hidden"
+        animate="show"
+        variants={{
+          hidden: { opacity: 0 },
+          show: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.1,
+              duration: 1
+            }
+          }
+        }}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5"
+      >
+        {/* Site Views */}
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+          }}
+          className="p-4 rounded-2xl bg-[#0d0d12] border border-[#13487E]/30 space-y-2"
+        >
+          <div className="flex items-center justify-between text-neutral-400">
+            <span className="text-xs font-bold uppercase tracking-wider">Site Views</span>
+            <div className="p-1.5 rounded-lg bg-[#13487E]/20 text-[#13487E]">
+              <Eye className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-white font-['Space_Grotesk']">
+            {settings.site_views || 0}
+          </div>
+          <div className="text-[11px] text-[#13487E] font-medium">
+            Total visitors
+          </div>
+        </motion.div>
+
         {/* Total Sales */}
-        <div className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2 col-span-2 sm:col-span-1 lg:col-span-1">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+          }}
+          className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2 col-span-2 sm:col-span-1 lg:col-span-1"
+        >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-xs font-bold uppercase tracking-wider">Total Sales</span>
             <div className="p-1.5 rounded-lg bg-[#13487E]/10 text-[#13487E]">
@@ -184,10 +228,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
             <span>Delivered & Paid orders</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Total Orders */}
-        <div className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+          }}
+          className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2"
+        >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-xs font-bold uppercase tracking-wider">Total Orders</span>
             <div className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300">
@@ -200,10 +250,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           <div className="text-[11px] text-[#13487E] font-medium">
             {pendingOrders} awaiting action
           </div>
-        </div>
+        </motion.div>
 
         {/* Total Products */}
-        <div className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+          }}
+          className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2"
+        >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-xs font-bold uppercase tracking-wider">Total Products</span>
             <div className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300">
@@ -216,10 +272,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           <div className="text-[11px] text-neutral-400">
             {activeProducts} active in store
           </div>
-        </div>
+        </motion.div>
 
         {/* Total Categories */}
-        <div className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+          }}
+          className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2"
+        >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-xs font-bold uppercase tracking-wider">Categories</span>
             <div className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300">
@@ -232,10 +294,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           <div className="text-[11px] text-neutral-400">
             Active departments
           </div>
-        </div>
+        </motion.div>
 
         {/* Total Customers */}
-        <div className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+          }}
+          className="p-4 rounded-2xl bg-[#0d0d12] border border-neutral-800/80 space-y-2"
+        >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-xs font-bold uppercase tracking-wider">Customers</span>
             <div className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300">
@@ -248,8 +316,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           <div className="text-[11px] text-neutral-400">
             Registered buyers
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* 6 Order Status Breakdown Cards */}
       <div className="space-y-3">

@@ -36,6 +36,12 @@ export interface Category {
   created_at?: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  name: string; // e.g., "Size: M" or "Color: Blue"
+  options: string[]; // e.g., ["S", "M", "L"] or ["Red", "Blue"]
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -48,6 +54,7 @@ export interface Product {
   images: string[];
   is_featured: boolean;
   is_active: boolean;
+  variants?: ProductVariant[];
   created_at: string;
   updated_at?: string;
 }
@@ -137,6 +144,7 @@ export interface StoreSettings {
     tiktok: string;
     youtube: string;
   };
+  site_views: number;
 }
 
 export interface CartItem {

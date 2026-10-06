@@ -127,6 +127,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </p>
               </div>
 
+              {/* Product Variants (Size, Color, etc.) */}
+              {product.variants && product.variants.length > 0 && (
+                <div className="pt-2 space-y-4 border-t border-neutral-800/50">
+                  {product.variants.map((v) => (
+                    <div key={v.id} className="space-y-2">
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
+                        Select {v.name}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {v.options.map((opt) => (
+                          <button
+                            key={opt}
+                            className="px-3 py-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-xs font-bold text-neutral-300 hover:border-[#13487E] hover:text-white transition-all focus:border-[#13487E] focus:ring-1 focus:ring-[#13487E]/30"
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Perks / Guarantees */}
               <div className="grid grid-cols-3 gap-2 pt-2 text-[11px] text-neutral-400">
                 <div className="p-2 rounded bg-neutral-950/60 border border-neutral-800 flex flex-col items-center text-center gap-1">

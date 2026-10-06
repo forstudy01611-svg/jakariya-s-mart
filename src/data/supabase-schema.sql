@@ -91,8 +91,26 @@ CREATE TABLE IF NOT EXISTS public.settings (
     currency_symbol TEXT DEFAULT '৳',
     announcement TEXT DEFAULT 'CASH ON DELIVERY (COD) AVAILABLE ALL OVER BANGLADESH | FAST 48H COURIER',
     announcement_enabled BOOLEAN DEFAULT TRUE,
-    social_links JSONB DEFAULT '{"facebook":"","instagram":"","tiktok":"","youtube":""}'::jsonb
+    social_links JSONB DEFAULT '{"facebook":"","instagram":"","tiktok":"","youtube":""}'::jsonb,
+    bkash_number TEXT DEFAULT '01700-123456',
+    bkash_type TEXT DEFAULT 'Personal (Send Money)',
+    nagad_number TEXT DEFAULT '01800-123456',
+    nagad_type TEXT DEFAULT 'Personal (Send Money)',
+    payment_instructions TEXT DEFAULT 'COD order confirm করতে উপরে দেওয়া নম্বরে Delivery Charge Send Money করুন এবং নিচের বক্সে Transaction ID দিন।',
+    delivery_policy_enabled BOOLEAN DEFAULT TRUE,
+    delivery_policy_text TEXT DEFAULT 'Return Policy...',
+    site_views INTEGER DEFAULT 0
 );
+
+-- Migration for existing settings table
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS bkash_number TEXT;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS bkash_type TEXT;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS nagad_number TEXT;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS nagad_type TEXT;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS payment_instructions TEXT;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS delivery_policy_enabled BOOLEAN;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS delivery_policy_text TEXT;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS site_views INTEGER DEFAULT 0;
 
 -- ==============================================================================
 -- DATABASE LEVEL AUTHORIZATION FUNCTION

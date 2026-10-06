@@ -254,6 +254,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
     tiktok: 'https://tiktok.com/@jakariyasmart',
     youtube: 'https://youtube.com/@jakariyasmart',
   },
+  site_views: 0,
 };
 
 export const INITIAL_ORDERS: Order[] = [];

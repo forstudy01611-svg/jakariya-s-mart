@@ -9,6 +9,7 @@ import { StoreFooter } from './StoreFooter';
 import { useStore } from '../../context/StoreContext';
 import { Product, Order } from '../../types';
 import { SlidersHorizontal, Sparkles, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface StorefrontViewProps {
   onNavigate: (route: string) => void;
@@ -72,7 +73,12 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
   const activeCategoryObj = categories.find((c) => c.id === selectedCategoryId);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-neutral-100 flex flex-col font-sans">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+      className="min-h-screen bg-[#0a0a0c] text-neutral-100 flex flex-col font-sans"
+    >
       {/* Navigation Bar */}
       <StoreNavbar
         onNavigate={onNavigate}
@@ -238,6 +244,6 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
           onNavigate('/checkout');
         }}
       />
-    </div>
+    </motion.div>
   );
 };

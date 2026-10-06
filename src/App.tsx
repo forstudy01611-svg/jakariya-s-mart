@@ -14,6 +14,7 @@ import { AdminCustomers } from './components/admin/AdminCustomers';
 import { AdminBanners } from './components/admin/AdminBanners';
 import { AdminDeliveryPayments } from './components/admin/AdminDeliveryPayments';
 import { AdminSettings } from './components/admin/AdminSettings';
+import { NeonLoader } from './components/storefront/NeonLoader';
 import { AUTHORIZED_ADMIN_USERNAME } from './types';
 
 // Helper to resolve current path supporting standard pathname as well as preview hash routing
@@ -32,6 +33,21 @@ const resolveCurrentPath = (): string => {
 const AppContent: React.FC = () => {
   const { adminUser, authInitialized } = useStore();
   const [currentPath, setCurrentPath] = useState<string>(resolveCurrentPath);
+  const [showLoader, setShowLoader] = useState(() => {
+    // Only show if not seen in current session
+    return !sessionStorage.getItem('jakariya_mart_loader_seen');
+  });
+
+  // Initial loader timing
+  useEffect(() => {
+    if (!showLoader) return;
+    
+    const timer = setTimeout(() => {
+      setShowLoader(false);
+      sessionStorage.setItem('jakariya_mart_loader_seen', 'true');
+    }, 2000); 
+    return () => clearTimeout(timer);
+  }, [showLoader]);
 
   // Keep in sync with browser back / forward and hash changes inside iframe
   useEffect(() => {
@@ -97,35 +113,51 @@ const AppContent: React.FC = () => {
 
   // Route: Standalone Checkout Page
   if (currentPath === '/checkout' || currentPath.startsWith('/checkout')) {
-    return <CheckoutView onNavigate={navigate} />;
+    return (
+      <>
+        <NeonLoader isLoading={showLoader} />
+        <CheckoutView onNavigate={navigate} />
+      </>
+    );
   }
 
   // Route: Storefront
   if (!currentPath.startsWith('/admin')) {
-    return <StorefrontView onNavigate={navigate} />;
+    return (
+      <>
+        <NeonLoader isLoading={showLoader} />
+        <StorefrontView onNavigate={navigate} />
+      </>
+    );
   }
 
   // If loading session for protected admin routes, show clean session check screen
   if (!authInitialized && currentPath !== '/admin/login') {
     return (
-      <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-[#13487E] text-white font-black text-2xl flex items-center justify-center animate-pulse shadow-lg shadow-[#13487E]/30 font-['Space_Grotesk']">
-          J
+      <>
+        <NeonLoader isLoading={showLoader} />
+        <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#13487E] text-white font-black text-2xl flex items-center justify-center animate-pulse shadow-lg shadow-[#13487E]/30 font-['Space_Grotesk']">
+            J
+          </div>
+          <div className="text-xs uppercase font-bold tracking-widest text-neutral-400">
+            Verifying Supabase Session...
+          </div>
         </div>
-        <div className="text-xs uppercase font-bold tracking-widest text-neutral-400">
-          Verifying Supabase Session...
-        </div>
-      </div>
+      </>
     );
   }
 
   // Route: Admin Login
   if (currentPath === '/admin/login') {
     return (
-      <AdminLogin
-        onSuccess={() => navigate('/admin')}
-        onNavigateHome={() => navigate('/')}
-      />
+      <>
+        <NeonLoader isLoading={showLoader} />
+        <AdminLogin
+          onSuccess={() => navigate('/admin')}
+          onNavigateHome={() => navigate('/')}
+        />
+      </>
     );
   }
 
@@ -198,9 +230,12 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <AdminLayout currentPath={currentPath} onNavigate={navigate}>
-      {renderAdminView()}
-    </AdminLayout>
+    <>
+      <NeonLoader isLoading={showLoader} />
+      <AdminLayout currentPath={currentPath} onNavigate={navigate}>
+        {renderAdminView()}
+      </AdminLayout>
+    </>
   );
 };
 

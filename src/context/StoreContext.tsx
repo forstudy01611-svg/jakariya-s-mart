@@ -110,6 +110,7 @@ interface StoreContextType {
 
   // Settings
   updateSettings: (updates: Partial<StoreSettings>) => Promise<void>;
+  incrementSiteViews: () => void;
 
   // Media upload
   uploadImage: (file: File) => Promise<string>;
@@ -1295,6 +1296,31 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const incrementSiteViews = useCallback(async () => {
+    setSettings(prev => {
+      const newViews = (prev.site_views || 0) + 1;
+      const updated = { ...prev, site_views: newViews };
+      
+      // Update Supabase if configured
+      if (isSupabaseConfigured && supabase) {
+        supabase.from('settings').update({ site_views: newViews }).eq('id', 1).then(({ error }) => {
+          if (error) console.error('Failed to update site views in Supabase', error);
+        });
+      }
+      
+      return updated;
+    });
+  }, []);
+
+  // Increment views on mount (once per session)
+  useEffect(() => {
+    const hasVisited = sessionStorage.getItem('jakariya_mart_visited');
+    if (!hasVisited) {
+      incrementSiteViews();
+      sessionStorage.setItem('jakariya_mart_visited', 'true');
+    }
+  }, [incrementSiteViews]);
+
   return (
     <StoreContext.Provider
       value={{
@@ -1353,6 +1379,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         sendPasswordReset,
         buyNowItem,
         setBuyNowItem,
+        incrementSiteViews,
       }}
     >
       {children}
