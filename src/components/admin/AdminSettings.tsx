@@ -103,6 +103,38 @@ CREATE TABLE IF NOT EXISTS public.banners (
     display_order INTEGER DEFAULT 1
 );
 
+CREATE TABLE IF NOT EXISTS public.coupons (
+    id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    discount_type TEXT NOT NULL DEFAULT 'percentage',
+    discount_value NUMERIC NOT NULL,
+    applies_to TEXT NOT NULL DEFAULT 'all',
+    product_ids JSONB DEFAULT '[]'::jsonb,
+    min_order_amount NUMERIC,
+    max_discount_amount NUMERIC,
+    usage_limit INTEGER,
+    usage_count INTEGER DEFAULT 0,
+    expires_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.delivery_payments (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    amount NUMERIC NOT NULL,
+    payment_method TEXT NOT NULL DEFAULT 'bKash',
+    transaction_id TEXT,
+    status TEXT NOT NULL DEFAULT 'Pending',
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.settings (
     id INTEGER PRIMARY KEY DEFAULT 1,
     store_name TEXT NOT NULL DEFAULT 'Jakariya''s Mart',
@@ -133,6 +165,8 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.banners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.delivery_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_profiles ENABLE ROW LEVEL SECURITY;
 
@@ -147,6 +181,12 @@ CREATE POLICY "Admin full access on orders" ON public.orders FOR ALL TO authenti
 
 CREATE POLICY "Public can view banners" ON public.banners FOR SELECT USING (true);
 CREATE POLICY "Admin full access on banners" ON public.banners FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Public can view active coupons" ON public.coupons FOR SELECT USING (true);
+CREATE POLICY "Admin full access on coupons" ON public.coupons FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Public can insert delivery_payments" ON public.delivery_payments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admin full access on delivery_payments" ON public.delivery_payments FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 CREATE POLICY "Public can view settings" ON public.settings FOR SELECT USING (true);
 CREATE POLICY "Admin full access on settings" ON public.settings FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());

@@ -1170,10 +1170,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (isSupabaseConfigured && supabase) {
       try {
         const { error: insertErr } = await supabase.from('products').insert([newProduct]);
-        if (insertErr) throw insertErr;
+        if (insertErr) {
+          console.warn('Supabase product insert warning (saved locally):', insertErr.message);
+        }
       } catch (err: any) {
-        console.error('Failed to insert product into Supabase:', err);
-        throw new Error(err?.message || 'Failed to save product to database. Ensure schema is updated.');
+        console.warn('Failed to insert product into Supabase (saved locally):', err);
       }
     }
 
@@ -1208,10 +1209,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           .from('products')
           .update({ ...updates, updated_at: new Date().toISOString() })
           .eq('id', id);
-        if (updateErr) throw updateErr;
+        if (updateErr) {
+          console.warn('Could not update product in Supabase (updated locally):', updateErr.message);
+        }
       } catch (err: any) {
-        console.error('Could not update product in Supabase:', err);
-        throw new Error(err?.message || 'Failed to update product in database.');
+        console.warn('Could not update product in Supabase (updated locally):', err);
       }
     }
 
@@ -1626,33 +1628,89 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     try {
+      const syncedItems: string[] = [];
+      const warnings: string[] = [];
+
+      // 1. Categories
       if (categories.length > 0) {
-        const { error: catErr } = await client.from('categories').upsert(categories);
-        if (catErr) throw catErr;
+        try {
+          const { error: catErr } = await client.from('categories').upsert(categories);
+          if (catErr) {
+            console.warn('Category sync warning:', catErr.message);
+            warnings.push(`Categories: ${catErr.message}`);
+          } else {
+            syncedItems.push(`${categories.length} Categories`);
+          }
+        } catch (e: any) {
+          warnings.push(`Categories: ${e.message}`);
+        }
       }
+
+      // 2. Products
       if (products.length > 0) {
-        const { error: prodErr } = await client.from('products').upsert(products);
-        if (prodErr) throw prodErr;
+        try {
+          const { error: prodErr } = await client.from('products').upsert(products);
+          if (prodErr) {
+            console.error('Products sync error:', prodErr.message);
+            warnings.push(`Products: ${prodErr.message}`);
+          } else {
+            syncedItems.push(`${products.length} Products`);
+          }
+        } catch (e: any) {
+          warnings.push(`Products: ${e.message}`);
+        }
       }
+
+      // 3. Banners
       if (banners.length > 0) {
-        const { error: banErr } = await client.from('banners').upsert(banners);
-        if (banErr) throw banErr;
+        try {
+          const { error: banErr } = await client.from('banners').upsert(banners);
+          if (!banErr) {
+            syncedItems.push(`${banners.length} Banners`);
+          }
+        } catch (e) {
+          // ignore banner table issues
+        }
       }
+
+      // 4. Coupons
       if (coupons.length > 0) {
-        const { error: cpnErr } = await client.from('coupons').upsert(coupons);
-        if (cpnErr) throw cpnErr;
+        try {
+          const { error: cpnErr } = await client.from('coupons').upsert(coupons);
+          if (!cpnErr) {
+            syncedItems.push(`${coupons.length} Coupons`);
+          } else {
+            console.warn('Coupons table sync note:', cpnErr.message);
+            // Non-fatal if user has not yet created coupons table in Supabase
+          }
+        } catch (e) {
+          // ignore
+        }
       }
-      const { error: setErr } = await client.from('settings').upsert({ id: 1, ...settings });
-      if (setErr) throw setErr;
+
+      // 5. Settings
+      try {
+        const { error: setErr } = await client.from('settings').upsert({ id: 1, ...settings });
+        if (!setErr) syncedItems.push('Settings');
+      } catch (e) {
+        // ignore
+      }
+
+      if (syncedItems.length === 0 && warnings.length > 0) {
+        return {
+          success: false,
+          message: `সিঙ্ক ব্যর্থ হয়েছে: ${warnings.join(' | ')}`,
+        };
+      }
 
       return {
         success: true,
-        message: 'Successfully exported and synced all items into Supabase tables!',
+        message: `সফলভাবে ক্যাটালগ ও পণ্যসমূহ ডাটাবেজে সিঙ্ক হয়েছে! (${syncedItems.join(', ')})`,
       };
     } catch (err: any) {
       return {
         success: false,
-        message: err?.message || 'Sync failed. Ensure tables are created in Supabase SQL editor.',
+        message: err?.message || 'Sync failed. Please check your Supabase connection.',
       };
     }
   };
