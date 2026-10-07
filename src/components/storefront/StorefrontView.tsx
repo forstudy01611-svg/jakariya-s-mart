@@ -61,10 +61,15 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
       });
   }, [products, selectedCategoryId, searchQuery, sortBy]);
 
-  const { setBuyNowItem } = useStore();
+  const { setBuyNowItems } = useStore();
 
   const handleBuyNow = (product: Product, quantity: number, selected_variants?: Record<string, string>) => {
-    setBuyNowItem({ product, quantity, selected_variants });
+    setBuyNowItems([{
+      id: `${product.id}-${selected_variants ? JSON.stringify(selected_variants) : ''}`,
+      product,
+      quantity,
+      selected_variants
+    }]);
     onNavigate('/checkout');
   };
 
@@ -232,7 +237,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onCheckout={() => {
-          setBuyNowItem(null);
+          setBuyNowItems(null);
           setIsCartOpen(false);
           onNavigate('/checkout');
         }}

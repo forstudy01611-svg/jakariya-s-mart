@@ -11,6 +11,10 @@ import {
   SlidersHorizontal,
   DollarSign,
   ArrowUpRight,
+  RefreshCw,
+  Trash2,
+  AlertTriangle,
+  Check,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order, OrderStatus, PaymentStatus } from '../../types';
@@ -21,12 +25,23 @@ interface AdminOrdersProps {
 }
 
 export const AdminOrders: React.FC<AdminOrdersProps> = ({ onNavigate }) => {
-  const { orders, settings, updateOrderStatus, updatePaymentStatus } = useStore();
+  const {
+    orders,
+    settings,
+    updateOrderStatus,
+    updatePaymentStatus,
+    deleteOrder,
+    clearAllOrders,
+    clearPendingOrders,
+    refreshAllData,
+  } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'total-high' | 'total-low'>('newest');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const filteredOrders = useMemo(() => {
     return orders
@@ -113,10 +128,76 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-neutral-400">Total: {orders.length} orders</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Refresh Button */}
+          <button
+            type="button"
+            disabled={isRefreshing}
+            onClick={async () => {
+              setIsRefreshing(true);
+              const res = await refreshAllData();
+              setActionNotice(res.message);
+              setTimeout(() => {
+                setIsRefreshing(false);
+                setActionNotice(null);
+              }, 2500);
+            }}
+            className="px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            title="Refresh orders from database"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#13487E] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+
+          {/* Clear Pending Orders Button */}
+          {orders.some((o) => o.order_status === 'Pending') && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (window.confirm('আপনি কি নিশ্চিত যে সকল Pending (টেস্ট) অর্ডার মুছে ফেলতে চান?')) {
+                  const res = await clearPendingOrders();
+                  setActionNotice(res.message);
+                  setTimeout(() => setActionNotice(null), 3000);
+                }
+              }}
+              className="px-3 py-2 rounded-xl bg-amber-950/40 hover:bg-amber-950/70 border border-amber-800/60 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Clear Pending ({orders.filter((o) => o.order_status === 'Pending').length})</span>
+            </button>
+          )}
+
+          {/* Clear All Orders Button */}
+          {orders.length > 0 && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (window.confirm('সতর্কতা: আপনি কি নিশ্চিত যে সমস্ত অর্ডার হিস্ট্রি মুছে ফেলতে চান?')) {
+                  const res = await clearAllOrders();
+                  setActionNotice(res.message);
+                  setTimeout(() => setActionNotice(null), 3000);
+                }
+              }}
+              className="px-3 py-2 rounded-xl bg-red-950/30 hover:bg-red-950/60 border border-red-800/50 text-red-400 text-xs font-bold flex items-center gap-1.5 transition-colors"
+              title="Clear all orders history"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear All</span>
+            </button>
+          )}
+
+          <span className="text-xs font-mono text-neutral-400 px-2 py-1 rounded bg-neutral-950 border border-neutral-800">
+            Total: {orders.length}
+          </span>
         </div>
       </div>
+
+      {actionNotice && (
+        <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <Check className="w-4 h-4 stroke-[3]" />
+          <span>{actionNotice}</span>
+        </div>
+      )}
 
       {/* Filter and Search Controls */}
       <div className="bg-[#0d0d12] border border-neutral-800/80 rounded-2xl p-4 space-y-3">
@@ -321,18 +402,35 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ onNavigate }) => {
                         </select>
                       </td>
 
-                      {/* Action View */}
+                      {/* Action View & Delete */}
                       <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onNavigate(`/admin/orders/${order.id}`);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-xs font-semibold transition-colors inline-flex items-center gap-1"
-                        >
-                          <span>Details</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNavigate(`/admin/orders/${order.id}`);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-xs font-semibold transition-colors inline-flex items-center gap-1"
+                          >
+                            <span>Details</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`অর্ডার #${order.id} মুছে ফেলতে চান?`)) {
+                                await deleteOrder(order.id);
+                                setActionNotice(`অর্ডার #${order.id} ডিলিট করা হয়েছে।`);
+                                setTimeout(() => setActionNotice(null), 2500);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950/60 text-neutral-400 hover:text-red-400 border border-neutral-800 hover:border-red-800 transition-colors"
+                            title="Delete this order"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -34,21 +34,15 @@ const resolveCurrentPath = (): string => {
 const AppContent: React.FC = () => {
   const { adminUser, authInitialized } = useStore();
   const [currentPath, setCurrentPath] = useState<string>(resolveCurrentPath);
-  const [showLoader, setShowLoader] = useState(() => {
-    // Only show if not seen in current session
-    return !sessionStorage.getItem('jakariya_mart_loader_seen');
-  });
+  const [showLoader, setShowLoader] = useState(true);
 
   // Initial loader timing
   useEffect(() => {
-    if (!showLoader) return;
-    
     const timer = setTimeout(() => {
       setShowLoader(false);
-      sessionStorage.setItem('jakariya_mart_loader_seen', 'true');
-    }, 2000); 
+    }, 1500); 
     return () => clearTimeout(timer);
-  }, [showLoader]);
+  }, []);
 
   // Keep in sync with browser back / forward and hash changes inside iframe
   useEffect(() => {

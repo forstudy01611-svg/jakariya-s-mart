@@ -87,6 +87,10 @@ interface StoreContextType {
   }) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
   updatePaymentStatus: (orderId: string, status: PaymentStatus) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
+  clearAllOrders: () => Promise<{ success: boolean; message: string }>;
+  clearPendingOrders: () => Promise<{ success: boolean; message: string }>;
+  refreshAllData: () => Promise<{ success: boolean; message: string }>;
 
   // Delivery Payment Operations (Admin manual verification)
   approveDeliveryPayment: (paymentId: string) => Promise<{ success: boolean; message: string }>;
@@ -122,8 +126,8 @@ interface StoreContextType {
   resetToDemoData: () => void;
   syncAllToSupabase: () => Promise<{ success: boolean; message: string }>;
   sendPasswordReset: (emailToReset?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
-  buyNowItem: { product: Product; quantity: number; selected_variants?: Record<string, string> } | null;
-  setBuyNowItem: (item: { product: Product; quantity: number; selected_variants?: Record<string, string> } | null) => void;
+  buyNowItems: CartItem[] | null;
+  setBuyNowItems: (items: CartItem[] | null) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -220,7 +224,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   });
 
-  const [buyNowItem, setBuyNowItem] = useState<{ product: Product; quantity: number } | null>(null);
+  const [buyNowItems, setBuyNowItems] = useState<CartItem[] | null>(null);
 
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
     try {
@@ -815,6 +819,110 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  // Delete single order
+  const deleteOrder = async (orderId: string): Promise<void> => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    setDeliveryPayments((prev) => prev.filter((p) => p.order_id !== orderId));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await Promise.all([
+          supabase.from('orders').delete().eq('id', orderId),
+          supabase.from('delivery_payments').delete().eq('order_id', orderId),
+        ]);
+      } catch (err) {
+        console.warn('Could not delete order in Supabase:', err);
+      }
+    }
+  };
+
+  // Clear all orders and delivery payments
+  const clearAllOrders = async (): Promise<{ success: boolean; message: string }> => {
+    setOrders([]);
+    setDeliveryPayments([]);
+    localStorage.removeItem(STORAGE_KEYS.ORDERS);
+    localStorage.removeItem(STORAGE_KEYS.DELIVERY_PAYMENTS);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await Promise.all([
+          supabase.from('orders').delete().neq('id', 'placeholder-none'),
+          supabase.from('delivery_payments').delete().neq('id', 'placeholder-none'),
+        ]);
+      } catch (err) {
+        console.warn('Could not clear orders from Supabase:', err);
+      }
+    }
+
+    return { success: true, message: 'সকল অর্ডার এবং পেমেন্ট হিস্ট্রি সফলভাবে ক্লিয়ার ও রিফ্রেশ করা হয়েছে।' };
+  };
+
+  // Clear only Pending orders
+  const clearPendingOrders = async (): Promise<{ success: boolean; message: string }> => {
+    const pendingOrderIds = orders.filter((o) => o.order_status === 'Pending').map((o) => o.id);
+    
+    setOrders((prev) => prev.filter((o) => o.order_status !== 'Pending'));
+    setDeliveryPayments((prev) => prev.filter((p) => !pendingOrderIds.includes(p.order_id)));
+
+    if (isSupabaseConfigured && supabase && pendingOrderIds.length > 0) {
+      try {
+        await Promise.all([
+          supabase.from('orders').delete().eq('order_status', 'Pending'),
+          supabase.from('delivery_payments').delete().eq('status', 'Pending'),
+        ]);
+      } catch (err) {
+        console.warn('Could not clear pending orders from Supabase:', err);
+      }
+    }
+
+    return { success: true, message: 'সকল Pending অর্ডার সফলভাবে রিমুভ ও রিফ্রেশ করা হয়েছে।' };
+  };
+
+  // Refresh all data from Supabase live
+  const refreshAllData = async (): Promise<{ success: boolean; message: string }> => {
+    setIsLoading(true);
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+      try {
+        const [prodRes, catRes, orderRes, banRes, setRes, teamRes, payRes] = await Promise.all([
+          client.from('products').select('*'),
+          client.from('categories').select('*').order('display_order', { ascending: true }),
+          client.from('orders').select('*').order('created_at', { ascending: false }),
+          client.from('banners').select('*').order('display_order', { ascending: true }),
+          client.from('settings').select('*').limit(1).maybeSingle(),
+          client.from('admin_profiles').select('*').order('created_at', { ascending: true }),
+          client.from('delivery_payments').select('*').order('created_at', { ascending: false }),
+        ]);
+
+        if (prodRes.data) setProducts(prodRes.data);
+        if (catRes.data) setCategories(catRes.data);
+        if (orderRes.data) setOrders(orderRes.data);
+        if (banRes.data) setBanners(banRes.data);
+        if (teamRes.data) setAdminProfiles(teamRes.data);
+        if (payRes.data) setDeliveryPayments(payRes.data);
+        if (setRes.data) setSettings(setRes.data);
+
+        return { success: true, message: 'ডাটাবেজ থেকে সকল ডেটা সফলভাবে রিফ্রেশ ও সিঙ্ক করা হয়েছে।' };
+      } catch (err: any) {
+        return { success: false, message: err?.message || 'রিফ্রেশ করতে সমস্যা হয়েছে।' };
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Local reload
+      try {
+        const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
+        const savedPay = localStorage.getItem(STORAGE_KEYS.DELIVERY_PAYMENTS);
+        if (savedPay) setDeliveryPayments(JSON.parse(savedPay));
+      } catch (e) {
+        console.error(e);
+      }
+      setIsLoading(false);
+      return { success: true, message: 'লোকাল স্টোরেজ থেকে ডেটা রিফ্রেশ করা হয়েছে।' };
+    }
+  };
+
   // Add Product
   const addProduct = async (productData: Omit<Product, 'id' | 'created_at'>): Promise<Product> => {
     const newProduct: Product = {
@@ -1340,6 +1448,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         placeOrder,
         updateOrderStatus,
         updatePaymentStatus,
+        deleteOrder,
+        clearAllOrders,
+        clearPendingOrders,
+        refreshAllData,
 
         approveDeliveryPayment,
         rejectDeliveryPayment,
@@ -1367,8 +1479,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         resetToDemoData,
         syncAllToSupabase,
         sendPasswordReset,
-        buyNowItem,
-        setBuyNowItem,
+        buyNowItems,
+        setBuyNowItems,
       }}
     >
       {children}

@@ -52,22 +52,19 @@ export const NeonLoader: React.FC<NeonLoaderProps> = ({ isLoading }) => {
               <div className="absolute -inset-1 rounded-full border border-[#f97316]/40 blur-sm" />
             </motion.div>
 
-            {/* Logo in Middle */}
-            <div className="absolute flex flex-col items-center justify-center gap-4">
+            {/* Logo Name in Middle */}
+            <div className="absolute flex flex-col items-center justify-center">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col items-center gap-3"
+                className="flex flex-col items-center"
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#13487E] to-[#0d3a66] flex items-center justify-center shadow-[0_0_30px_rgba(19,72,126,0.5)] font-black text-white text-3xl sm:text-4xl tracking-tighter">
-                  J
-                </div>
                 <motion.span
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.8 }}
-                  className="text-xl sm:text-2xl font-black tracking-tight text-white font-['Space_Grotesk'] text-center whitespace-nowrap drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                  className="text-2xl sm:text-4xl font-black tracking-tight text-white font-['Space_Grotesk'] text-center whitespace-nowrap drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
                 >
                   Jakariya's Mart
                 </motion.span>
@@ -75,13 +72,7 @@ export const NeonLoader: React.FC<NeonLoaderProps> = ({ isLoading }) => {
             </div>
           </div>
 
-          {/* Bottom Bar Decoration */}
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: "100px" }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-            className="absolute bottom-12 h-[2px] bg-gradient-to-r from-transparent via-[#f97316] to-transparent shadow-[0_0_10px_#f97316]"
-          />
+
         </motion.div>
       )}
     </AnimatePresence>

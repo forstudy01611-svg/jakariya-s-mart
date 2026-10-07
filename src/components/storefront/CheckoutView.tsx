@@ -17,6 +17,8 @@ import {
   Truck,
   X,
   Download,
+  Eye,
+  FileText,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order, DeliveryPaymentMethod } from '../../types';
@@ -28,6 +30,7 @@ import {
 } from '../../utils/bangladesh';
 import { StoreNavbar } from './StoreNavbar';
 import { StoreFooter } from './StoreFooter';
+import { InvoiceDocument } from '../common/InvoiceDocument';
 
 const ALL_BD_DISTRICTS = [
   'Dhaka',
@@ -73,7 +76,7 @@ interface CheckoutViewProps {
 }
 
 export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
-  const { cart, cartTotal, settings, placeOrder, checkTrxIdExists, buyNowItem, setBuyNowItem } = useStore();
+  const { cart, cartTotal, settings, placeOrder, checkTrxIdExists, buyNowItems, setBuyNowItems } = useStore();
 
   // Customer Form State (5 fields: 4 required, 1 optional)
   const [fullName, setFullName] = useState('');
@@ -149,15 +152,13 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
   }, [popupError]);
 
   // Compute Subtotal & Items based on whether it's a Buy Now or Cart Checkout
-  const activeItems = buyNowItem
-    ? [
-        {
-          product: buyNowItem.product,
-          quantity: buyNowItem.quantity,
-          subtotal: (buyNowItem.product.discount_price ?? buyNowItem.product.price) * buyNowItem.quantity,
-          selected_variants: buyNowItem.selected_variants,
-        },
-      ]
+  const activeItems = buyNowItems
+    ? buyNowItems.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+        subtotal: (item.product.discount_price ?? item.product.price) * item.quantity,
+        selected_variants: item.selected_variants,
+      }))
     : cart.map((item) => ({
         product: item.product,
         quantity: item.quantity,
@@ -165,8 +166,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
         selected_variants: item.selected_variants,
       }));
 
-  const activeSubtotal = buyNowItem
-    ? (buyNowItem.product.discount_price ?? buyNowItem.product.price) * buyNowItem.quantity
+  const activeSubtotal = buyNowItems
+    ? buyNowItems.reduce((sum, item) => sum + (item.product.discount_price ?? item.product.price) * item.quantity, 0)
     : cartTotal;
 
   // Delivery Charge calculation based on District
@@ -345,7 +346,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
       });
 
       setCreatedOrder(order);
-      setBuyNowItem(null);
+      setBuyNowItems(null);
     } catch (err: any) {
       triggerPopupError(
         'অর্ডার সম্পন্ন করা যায়নি (Submission Failed)',
@@ -379,152 +380,64 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
         </button>
 
         {createdOrder ? (
-          /* Order Confirmation Success View */
-          <div className="bg-[#0d0d12] border border-neutral-800 rounded-2xl p-6 sm:p-10 space-y-6 text-center shadow-2xl">
-            <div className="w-16 h-16 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-950/50 animate-pulse">
-              <Clock className="w-10 h-10" />
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-2xl sm:text-3xl font-black text-white font-['Space_Grotesk']">
-                ধন্যবাদ, {createdOrder.customer_name}!
-              </h3>
-              <p className="text-xs sm:text-sm text-neutral-300 max-w-lg mx-auto leading-relaxed">
-                আপনার অর্ডার এবং ডেলিভারি চার্জের Transaction ID সফলভাবে জমা হয়েছে। পেমেন্ট স্ট্যাটাস বর্তমানে <strong className="text-amber-400">Pending Verification</strong> আছে। অ্যাডমিন যাচাই করার পর অর্ডারটি কনফার্ম করা হবে।
-              </p>
-            </div>
-
-            {/* Simulated SMS Notification Notice */}
-            <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-left space-y-1.5 max-w-md mx-auto text-xs">
-              <div className="flex items-center gap-2 text-emerald-300 font-bold">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Automated SMS Notification Simulation</span>
+          /* Order Confirmation Success View with Full Visible Invoice */
+          <div className="space-y-6">
+            {/* Success Notification Banner */}
+            <div className="bg-[#0d0d12] border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-4 text-center shadow-2xl">
+              <div className="w-16 h-16 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-950/50">
+                <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
               </div>
-              <p className="text-[11px] text-neutral-300 font-mono">
-                [SMS Sent to {createdOrder.customer_phone}]: "Dear {createdOrder.customer_name}, order {createdOrder.id} received. Delivery charge TrxID under verification. Thank you for shopping at Jakariya's Mart!"
-              </p>
-            </div>
 
-            {/* Order Summary Details */}
-            <div className="p-5 rounded-xl bg-neutral-950 border border-neutral-800 max-w-md mx-auto text-left space-y-2.5 text-xs">
-              <div className="flex justify-between items-center pb-2 border-b border-neutral-800">
-                <span className="text-neutral-400 font-medium">Order ID:</span>
-                <span className="font-mono font-black text-[#13487E] text-sm">
-                  {createdOrder.id}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-mono uppercase tracking-widest text-[#13487E] bg-[#13487E]/10 px-3 py-1 rounded-full font-bold">
+                  Order Successfully Placed (#{createdOrder.id})
                 </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white font-['Space_Grotesk'] tracking-tight">
+                  ধন্যবাদ, {createdOrder.customer_name}!
+                </h3>
+                <p className="text-xs sm:text-sm text-neutral-300 max-w-lg mx-auto leading-relaxed">
+                  আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। নিচে আপনার অফিসিয়াল ইনভয়েসটি দেওয়া হলো। আপনি চাইলে এটি সংরক্ষণ বা ডাউনলোড করতে পারবেন।
+                </p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-400">Payment Status:</span>
-                <span className="font-mono font-bold text-amber-400">Pending Verification</span>
+
+              {/* Simulated SMS Notification Notice */}
+              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-left space-y-1 max-w-lg mx-auto text-xs">
+                <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Confirmation SMS Notification</span>
+                </div>
+                <p className="text-[11px] text-neutral-300 font-mono">
+                  [SMS Sent to {createdOrder.customer_phone}]: "Dear {createdOrder.customer_name}, order #{createdOrder.id} confirmed. TrxID: {createdOrder.delivery_transaction_id}. Thank you for shopping with Jakariya's Mart!"
+                </p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-400">Delivery Charge Paid:</span>
-                <span className="font-mono text-emerald-400 font-bold">
-                  {formatBDT(createdOrder.delivery_charge)} ({createdOrder.delivery_payment_method})
-                </span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-neutral-800 font-bold text-sm">
-                <span className="text-white">Cash on Delivery Due:</span>
-                <span className="font-mono text-[#13487E] text-base">
-                  {formatBDT(createdOrder.subtotal)}
-                </span>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('/')}
+                  className="px-6 py-3 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#13487E]/25"
+                >
+                  Continue Shopping (কেনাকাটা চালিয়ে যান)
+                </button>
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                onClick={() => window.print()}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs uppercase tracking-wider transition-all border border-neutral-700 flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Invoice (ইভয়েস ডাউনলোড)</span>
-              </button>
-              <button
-                onClick={() => onNavigate('/')}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#13487E]/25"
-              >
-                Continue Shopping
-              </button>
-            </div>
-
-            {/* Hidden Invoice for Printing */}
-            <div className="hidden print:block print:text-black bg-white p-8 text-left text-sm" id="printable-invoice">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h1 className="text-3xl font-black uppercase text-[#13487E]">{settings.store_name}</h1>
-                  <p className="text-gray-600 mt-1">{settings.tagline}</p>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-xl font-bold uppercase">INVOICE</h2>
-                  <p className="text-gray-600">#{createdOrder.id}</p>
-                  <p className="text-gray-600">{new Date(createdOrder.created_at).toLocaleDateString()}</p>
-                </div>
+            {/* VISIBLE OFFICIAL CUSTOMER INVOICE DOCUMENT */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#13487E]" />
+                  <span>Customer Order Invoice (গ্রাহক ইনভয়েস রশিদ)</span>
+                </h2>
+                <span className="text-[10px] text-neutral-500 font-mono">Invoice Auto-Generated</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-8 mb-8 border-t border-b border-gray-100 py-6">
-                <div>
-                  <h3 className="font-bold text-gray-400 uppercase text-[10px] mb-2 tracking-widest">Bill To</h3>
-                  <p className="font-bold text-lg">{createdOrder.customer_name}</p>
-                  <p className="text-gray-600">{createdOrder.customer_phone}</p>
-                  <p className="text-gray-600 mt-1">{createdOrder.customer_address}, {createdOrder.district}</p>
-                </div>
-                <div className="text-right">
-                  <h3 className="font-bold text-gray-400 uppercase text-[10px] mb-2 tracking-widest">Store Info</h3>
-                  <p className="font-bold">{settings.store_name}</p>
-                  <p className="text-gray-600">{settings.phone}</p>
-                  <p className="text-gray-600">{settings.address}</p>
-                </div>
-              </div>
-
-              <table className="w-full mb-8">
-                <thead>
-                  <tr className="border-b-2 border-gray-800 text-left">
-                    <th className="py-3 font-black uppercase text-xs">Item Description</th>
-                    <th className="py-3 font-black uppercase text-xs text-center">Qty</th>
-                    <th className="py-3 font-black uppercase text-xs text-right">Price</th>
-                    <th className="py-3 font-black uppercase text-xs text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {createdOrder.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-4">
-                        <p className="font-bold text-base">{item.product_name}</p>
-                        {item.selected_variants && Object.entries(item.selected_variants).map(([k, v]) => (
-                          <span key={k} className="text-xs text-gray-500 mr-3 italic">{k}: {v}</span>
-                        ))}
-                      </td>
-                      <td className="py-4 text-center">{item.quantity}</td>
-                      <td className="py-4 text-right font-mono">{formatBDT(item.price)}</td>
-                      <td className="py-4 text-right font-bold font-mono">{formatBDT(item.subtotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="flex justify-end">
-                <div className="w-64 space-y-3">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span className="font-mono">{formatBDT(createdOrder.subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Delivery Charge ({createdOrder.delivery_payment_method})</span>
-                    <span className="font-mono">{formatBDT(createdOrder.delivery_charge)}</span>
-                  </div>
-                  <div className="flex justify-between pt-3 border-t-2 border-gray-800 font-black text-xl text-[#13487E]">
-                    <span>TOTAL DUE</span>
-                    <span className="font-mono">{formatBDT(createdOrder.total)}</span>
-                  </div>
-                  <div className="pt-2 text-[10px] text-gray-400 text-right uppercase tracking-widest italic">
-                    Cash on Delivery
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-20 pt-8 border-t border-gray-100 text-center text-gray-400 text-xs uppercase tracking-widest">
-                Thank you for choosing {settings.store_name}
-              </div>
+              {/* Render Invoice Directly On Screen */}
+              <InvoiceDocument 
+                order={createdOrder} 
+                settings={settings} 
+                showActions={true} 
+              />
             </div>
           </div>
         ) : (
@@ -533,7 +446,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
             <div className="border-b border-neutral-800 pb-4">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#13487E]">
-                  {buyNowItem ? 'Direct Buy Now Checkout' : 'Express Checkout'}
+                  {buyNowItems ? 'Direct Buy Now Checkout' : 'Express Checkout'}
                 </span>
                 <span className="text-[10px] bg-neutral-900 border border-neutral-800 text-neutral-300 px-2 py-0.5 rounded font-mono font-bold">
                   Cash on Delivery (COD)

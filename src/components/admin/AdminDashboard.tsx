@@ -14,6 +14,8 @@ import {
   ArrowUpRight,
   TrendingUp,
   AlertTriangle,
+  RefreshCw,
+  Check,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '../../context/StoreContext';
@@ -25,7 +27,9 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
-  const { products, categories, orders, customers, settings, deliveryPayments } = useStore();
+  const { products, categories, orders, customers, settings, deliveryPayments, refreshAllData } = useStore();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [refreshNotice, setRefreshNotice] = React.useState<string | null>(null);
 
   // Compute real metrics from database
   const totalProducts = products.length;
@@ -116,7 +120,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Live Refresh Button */}
+          <button
+            type="button"
+            disabled={isRefreshing}
+            onClick={async () => {
+              setIsRefreshing(true);
+              const res = await refreshAllData();
+              setRefreshNotice(res.message);
+              setTimeout(() => {
+                setIsRefreshing(false);
+                setRefreshNotice(null);
+              }, 2500);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5"
+            title="Refresh database live"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#13487E] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
+          </button>
+
           <button
             onClick={() => onNavigate('/admin/delivery-payments')}
             className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
@@ -142,6 +166,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </button>
         </div>
       </div>
+
+      {refreshNotice && (
+        <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <Check className="w-4 h-4 stroke-[3]" />
+          <span>{refreshNotice}</span>
+        </div>
+      )}
 
       {/* Pending Delivery Payments Notification Banner */}
       {pendingDeliveryPayments > 0 && (

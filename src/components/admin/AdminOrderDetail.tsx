@@ -15,10 +15,13 @@ import {
   FileText,
   Copy,
   Check,
+  Eye,
+  Download,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus, PaymentStatus } from '../../types';
 import { formatBDT, formatBdPhone } from '../../utils/bangladesh';
+import { InvoiceModal } from '../common/InvoiceModal';
 
 interface AdminOrderDetailProps {
   orderId: string;
@@ -44,6 +47,7 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
   const [copiedTrx, setCopiedTrx] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ text: string; success: boolean } | null>(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const deliveryPayment = deliveryPayments.find(
     (p) => p.order_id === orderId || p.id === order?.delivery_payment_id
@@ -137,16 +141,35 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* View Official Invoice Modal Button */}
           <button
-            onClick={() => window.print()}
+            type="button"
+            onClick={() => setShowInvoiceModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] text-xs font-black uppercase tracking-wider text-white transition-all shadow-md shadow-[#13487E]/20 flex items-center gap-1.5"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>View & Download Invoice</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowInvoiceModal(true)}
             className="px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-neutral-300 hover:text-white transition-colors flex items-center gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print Invoice</span>
+            <span>Print</span>
           </button>
         </div>
       </div>
+
+      {/* Invoice Modal for Admin */}
+      <InvoiceModal
+        isOpen={showInvoiceModal}
+        onClose={() => setShowInvoiceModal(false)}
+        order={order}
+        settings={settings}
+      />
 
       {/* Main Order Details Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

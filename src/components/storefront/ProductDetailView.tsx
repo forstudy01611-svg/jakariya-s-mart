@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, ShoppingBag, Check, ShieldCheck, Truck, RefreshCw, ArrowLeft } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, Check, ShieldCheck, Truck, RefreshCw, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { formatBDT } from '../../utils/bangladesh';
@@ -17,12 +17,12 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   productId,
   onNavigate,
 }) => {
-  const { products, categories, settings, addToCart, setBuyNowItem } = useStore();
+  const { products, categories, settings, addToCart, setBuyNowItems } = useStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
   const [variantError, setVariantError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,19 +49,45 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const isOutOfStock = product.stock <= 0;
   const displayPrice = product.discount_price ?? product.price;
 
+  const getSelectedItems = () => {
+    const items: { product: Product; quantity: number; selected_variants: Record<string, string> }[] = [];
+    
+    if (!product.variants || product.variants.length === 0) {
+      items.push({ product, quantity, selected_variants: {} });
+    } else {
+      // For each variant type, we check what's selected
+      // Note: This implementation assumes selecting multiple options for EACH variant type independently
+      // if the user wants combinations, they should ideally be separate products or a more complex UI
+      // but based on "V1, V2, V3" we'll treat them as individual selections.
+      Object.entries(selectedOptions).forEach(([key, qty]) => {
+        if (qty > 0) {
+          const [vName, vValue] = key.split(':');
+          items.push({
+            product,
+            quantity: qty,
+            selected_variants: { [vName]: vValue }
+          });
+        }
+      });
+    }
+    return items;
+  };
+
   const handleAddToCart = () => {
     if (isOutOfStock) return;
     
-    // Validate variants
-    if (product.variants && product.variants.length > 0) {
-      const missingVariants = product.variants.filter(v => !selectedVariants[v.name]);
-      if (missingVariants.length > 0) {
-        setVariantError(`অনুগ্রহ করে ${missingVariants.map(v => v.name).join(', ')} সিলেক্ট করুন।`);
-        return;
-      }
+    const selectedItems = getSelectedItems();
+
+    // Validate variants: if product has variants, at least one must be selected
+    if (product.variants && product.variants.length > 0 && selectedItems.length === 0) {
+      setVariantError('অনুগ্রহ করে অন্তত একটি ভেরিয়েন্ট এবং তার পরিমাণ সিলেক্ট করুন।');
+      return;
     }
 
-    addToCart(product, quantity, selectedVariants);
+    selectedItems.forEach(item => {
+      addToCart(item.product, item.quantity, item.selected_variants);
+    });
+    
     setAdded(true);
     setVariantError(null);
     setTimeout(() => setAdded(false), 2000);
@@ -70,23 +96,51 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const handleBuyNowClick = () => {
     if (isOutOfStock) return;
 
+    const selectedItems = getSelectedItems();
+
     // Validate variants
-    if (product.variants && product.variants.length > 0) {
-      const missingVariants = product.variants.filter(v => !selectedVariants[v.name]);
-      if (missingVariants.length > 0) {
-        setVariantError(`অনুগ্রহ করে ${missingVariants.map(v => v.name).join(', ')} সিলেক্ট করুন।`);
-        return;
-      }
+    if (product.variants && product.variants.length > 0 && selectedItems.length === 0) {
+      setVariantError('অনুগ্রহ করে অন্তত একটি ভেরিয়েন্ট এবং তার পরিমাণ সিলেক্ট করুন।');
+      return;
     }
 
-    setBuyNowItem({ product, quantity, selected_variants: selectedVariants });
+    // For Buy Now with multiple variants, we'll convert them to cart items format
+    const buyNowCartItems = selectedItems.map(item => ({
+      id: `${item.product.id}-${Object.entries(item.selected_variants).map(([k, v]) => `${k}:${v}`).join('|')}`,
+      product: item.product,
+      quantity: item.quantity,
+      selected_variants: item.selected_variants
+    }));
+
+    setBuyNowItems(buyNowCartItems);
     onNavigate('/checkout');
   };
 
-  const handleSelectVariant = (variantName: string, option: string) => {
-    setSelectedVariants(prev => ({ ...prev, [variantName]: option }));
+  const handleToggleVariant = (variantName: string, option: string) => {
+    const key = `${variantName}:${option}`;
+    setSelectedOptions(prev => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = 1;
+      }
+      return next;
+    });
     if (variantError) setVariantError(null);
   };
+
+  const handleUpdateOptionQty = (variantName: string, option: string, delta: number) => {
+    const key = `${variantName}:${option}`;
+    setSelectedOptions(prev => {
+      const currentQty = prev[key] || 0;
+      const newQty = Math.max(1, Math.min(product.stock, currentQty + delta));
+      return { ...prev, [key]: newQty };
+    });
+  };
+
+  // Calculate total price for all selected variants
+  const totalSelectedPrice = Object.values(selectedOptions).reduce((sum, qty) => sum + qty * displayPrice, 0) || (quantity * displayPrice);
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-neutral-100 flex flex-col font-sans">
@@ -197,22 +251,54 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     {product.variants.map((v) => (
                       <div key={v.id} className="space-y-3">
                         <label className="text-xs font-bold text-neutral-400 uppercase tracking-[0.2em] block">
-                          Select {v.name}
+                          Select {v.name} (একাধিক সিলেক্ট করা যাবে)
                         </label>
-                        <div className="flex flex-wrap gap-2.5">
-                          {v.options.map((opt) => (
-                            <button
-                              key={opt}
-                              onClick={() => handleSelectVariant(v.name, opt)}
-                              className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-300 ${
-                                selectedVariants[v.name] === opt
-                                  ? 'bg-[#13487E] border-[#13487E] text-white shadow-[0_0_20px_rgba(19,72,126,0.3)]'
-                                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          ))}
+                        <div className="space-y-2">
+                          {v.options.map((opt) => {
+                            const isSelected = !!selectedOptions[`${v.name}:${opt}`];
+                            return (
+                              <div 
+                                key={opt} 
+                                className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all duration-300 ${
+                                  isSelected 
+                                    ? 'bg-[#13487E]/10 border-[#13487E] text-white' 
+                                    : 'bg-neutral-950/40 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                                }`}
+                              >
+                                <div 
+                                  className="flex items-center gap-3 cursor-pointer flex-1"
+                                  onClick={() => handleToggleVariant(v.name, opt)}
+                                >
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                                    isSelected ? 'bg-[#13487E] border-[#13487E]' : 'border-neutral-700'
+                                  }`}>
+                                    {isSelected && <Check className="w-3.5 h-3.5 text-white stroke-[4]" />}
+                                  </div>
+                                  <span className="text-sm font-bold">{opt}</span>
+                                </div>
+                                
+                                {isSelected && (
+                                  <div className="flex items-center border border-neutral-700 rounded-xl bg-neutral-900/80 p-0.5">
+                                    <button
+                                      onClick={() => handleUpdateOptionQty(v.name, opt, -1)}
+                                      className="p-1.5 text-neutral-500 hover:text-white transition-colors"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="px-3 text-xs font-black text-white font-mono min-w-[2rem] text-center">
+                                      {selectedOptions[`${v.name}:${opt}`]}
+                                    </span>
+                                    <button
+                                      onClick={() => handleUpdateOptionQty(v.name, opt, 1)}
+                                      className="p-1.5 text-neutral-500 hover:text-white transition-colors"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -222,7 +308,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 {/* Variant Error Message */}
                 {variantError && (
                   <div className="p-4 rounded-xl bg-red-950/30 border border-red-900/50 flex items-center gap-3 text-red-400 text-sm font-bold animate-in zoom-in-95 duration-200">
-                    <X className="w-4 h-4 flex-shrink-0" />
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span>{variantError}</span>
                   </div>
                 )}
@@ -231,32 +317,34 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               {/* Actions: Quantity, Add to Cart & Buy Now */}
               <div className="space-y-6 pt-6 border-t border-neutral-800/60">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase font-bold tracking-[0.2em] text-neutral-500">
-                      Quantity
-                    </span>
-                    <div className="flex items-center border-2 border-neutral-800 rounded-xl bg-neutral-950/80 p-1 w-fit">
-                      <button
-                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        disabled={quantity <= 1 || isOutOfStock}
-                        className="p-2.5 text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="px-6 text-base font-black text-white font-mono min-w-[3rem] text-center">
-                        {quantity}
+                  {(!product.variants || product.variants.length === 0) && (
+                    <div className="space-y-2">
+                      <span className="text-xs uppercase font-bold tracking-[0.2em] text-neutral-500">
+                        Quantity
                       </span>
-                      <button
-                        onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                        disabled={quantity >= product.stock || isOutOfStock}
-                        className="p-2.5 text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center border-2 border-neutral-800 rounded-xl bg-neutral-950/80 p-1 w-fit">
+                        <button
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          disabled={quantity <= 1 || isOutOfStock}
+                          className="p-2.5 text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="px-6 text-base font-black text-white font-mono min-w-[3rem] text-center">
+                          {quantity}
+                        </span>
+                        <button
+                          onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                          disabled={quantity >= product.stock || isOutOfStock}
+                          className="p-2.5 text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 h-fit self-end">
                     {/* Add to Bag Button */}
@@ -297,7 +385,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                       }`}
                     >
                       <Check className="w-5 h-5 stroke-[4]" />
-                      <span>Buy Now • {formatBDT(displayPrice * quantity)}</span>
+                      <span>Buy Now • {formatBDT(totalSelectedPrice)}</span>
                     </button>
                   </div>
                 </div>
