@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Check,
+  Tag,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '../../context/StoreContext';
@@ -151,6 +152,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           >
             <CreditCard className="w-4 h-4 text-amber-400" />
             <span>Delivery Payments ({pendingDeliveryPayments})</span>
+          </button>
+          <button
+            onClick={() => onNavigate('/admin/coupons')}
+            className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5"
+          >
+            <Tag className="w-4 h-4 text-[#13487E]" />
+            <span>Coupons</span>
           </button>
           <button
             onClick={() => onNavigate('/admin/products/new')}

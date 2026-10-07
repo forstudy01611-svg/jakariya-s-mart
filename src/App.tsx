@@ -14,6 +14,7 @@ import { AdminCustomers } from './components/admin/AdminCustomers';
 import { AdminBanners } from './components/admin/AdminBanners';
 import { AdminDeliveryPayments } from './components/admin/AdminDeliveryPayments';
 import { AdminSettings } from './components/admin/AdminSettings';
+import { AdminCoupons } from './components/admin/AdminCoupons';
 import { NeonLoader } from './components/storefront/NeonLoader';
 import { ProductDetailView } from './components/storefront/ProductDetailView';
 import { AUTHORIZED_ADMIN_USERNAME } from './types';
@@ -219,6 +220,11 @@ const AppContent: React.FC = () => {
     // 7. /admin/customers
     if (currentPath === '/admin/customers') {
       return <AdminCustomers onNavigate={navigate} />;
+    }
+
+    // Coupons: /admin/coupons
+    if (currentPath === '/admin/coupons') {
+      return <AdminCoupons />;
     }
 
     // 8. /admin/banners

@@ -16,6 +16,7 @@ import {
   DeliveryPayment,
   DeliveryPaymentStatus,
   DeliveryPaymentMethod,
+  Coupon,
 } from '../types';
 import {
   INITIAL_CATEGORIES,
@@ -24,6 +25,7 @@ import {
   INITIAL_SETTINGS,
   INITIAL_ORDERS,
   INITIAL_DELIVERY_PAYMENTS,
+  INITIAL_COUPONS,
 } from '../data/initialData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { calculateDeliveryCharge } from '../utils/bangladesh';
@@ -37,6 +39,8 @@ interface StoreContextType {
   cart: CartItem[];
   customers: Customer[];
   deliveryPayments: DeliveryPayment[];
+  coupons: Coupon[];
+  appliedCoupon: Coupon | null;
   
   // Auth & Team
   adminUser: AdminUser | null;
@@ -54,6 +58,15 @@ interface StoreContextType {
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
+
+  // Coupon operations
+  addCoupon: (couponData: Omit<Coupon, 'id' | 'created_at' | 'usage_count'>) => Promise<Coupon>;
+  updateCoupon: (id: string, updates: Partial<Coupon>) => Promise<Coupon>;
+  deleteCoupon: (id: string) => Promise<void>;
+  toggleCouponStatus: (id: string) => Promise<void>;
+  applyCouponCode: (code: string, itemsToCalculate?: { product: Product; quantity: number }[]) => { success: boolean; message: string; discount?: number };
+  removeAppliedCoupon: () => void;
+  calculateDiscountForCoupon: (coupon: Coupon, items: { product: Product; quantity: number }[]) => { discount: number; eligibleSubtotal: number; isValid: boolean; reason?: string };
 
   // Order operations
   placeOrder: (orderData: {
@@ -78,6 +91,8 @@ interface StoreContextType {
       selected_variants?: Record<string, string>;
     }[];
     subtotal: number;
+    coupon_code?: string;
+    coupon_discount?: number;
     delivery_charge: number;
     total: number;
     payment_method?: 'Cash on Delivery' | 'cash_on_delivery';
@@ -142,6 +157,7 @@ const STORAGE_KEYS = {
   ADMIN_SESSION: 'jakariyas_mart_admin_session_v7',
   ADMIN_PROFILES: 'jakariyas_mart_admin_profiles_v7',
   DELIVERY_PAYMENTS: 'jakariyas_mart_delivery_payments_v7',
+  COUPONS: 'jakariyas_mart_coupons_v7',
 };
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -162,6 +178,17 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return INITIAL_DELIVERY_PAYMENTS;
     }
   });
+
+  const [coupons, setCoupons] = useState<Coupon[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.COUPONS);
+      return saved ? JSON.parse(saved) : INITIAL_COUPONS;
+    } catch {
+      return INITIAL_COUPONS;
+    }
+  });
+
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
   const [products, setProducts] = useState<Product[]>(() => {
     try {
@@ -311,6 +338,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   useEffect(() => {
     try {
+      localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(coupons));
+    } catch (e) {
+      console.error('Failed to save coupons', e);
+    }
+  }, [coupons]);
+
+  useEffect(() => {
+    try {
       if (adminUser) {
         localStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, JSON.stringify(adminUser));
       } else {
@@ -332,7 +367,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const fetchSupabaseData = async () => {
       setIsLoading(true);
       try {
-        const [prodRes, catRes, orderRes, banRes, setRes, teamRes, payRes] = await Promise.all([
+        const [prodRes, catRes, orderRes, banRes, setRes, teamRes, payRes, cpnRes] = await Promise.all([
           client.from('products').select('*'),
           client.from('categories').select('*').order('display_order', { ascending: true }),
           client.from('orders').select('*').order('created_at', { ascending: false }),
@@ -340,6 +375,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           client.from('settings').select('*').limit(1).maybeSingle(),
           client.from('admin_profiles').select('*').order('created_at', { ascending: true }),
           client.from('delivery_payments').select('*').order('created_at', { ascending: false }),
+          client.from('coupons').select('*').order('created_at', { ascending: false }),
         ]);
 
         if (prodRes.data && prodRes.data.length > 0) setProducts(prodRes.data);
@@ -348,6 +384,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (banRes.data && banRes.data.length > 0) setBanners(banRes.data);
         if (teamRes.data && teamRes.data.length > 0) setAdminProfiles(teamRes.data);
         if (payRes.data && payRes.data.length > 0) setDeliveryPayments(payRes.data);
+        if (cpnRes.data && cpnRes.data.length > 0) setCoupons(cpnRes.data);
         if (setRes.data) setSettings(setRes.data);
 
         // Check active session strictly against AUTHORIZED_ADMIN_EMAIL
@@ -507,6 +544,178 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return sum + itemPrice * item.quantity;
   }, 0);
 
+  // Coupon Calculation Logic
+  const calculateDiscountForCoupon = useCallback((
+    coupon: Coupon,
+    items: { product: Product; quantity: number }[]
+  ): { discount: number; eligibleSubtotal: number; isValid: boolean; reason?: string } => {
+    if (!coupon.is_active) {
+      return { discount: 0, eligibleSubtotal: 0, isValid: false, reason: 'এই কুপনটি বর্তমানে নিষ্ক্রিয় রয়েছে।' };
+    }
+
+    if (coupon.end_date && new Date(coupon.end_date) < new Date()) {
+      return { discount: 0, eligibleSubtotal: 0, isValid: false, reason: 'এই কুপনের মেয়াদ শেষ হয়ে গেছে।' };
+    }
+
+    if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
+      return { discount: 0, eligibleSubtotal: 0, isValid: false, reason: 'এই কুপনটির ব্যবহারের সর্বোচ্চ সীমা শেষ হয়েছে।' };
+    }
+
+    const totalCartSubtotal = items.reduce((sum, item) => {
+      const price = item.product.discount_price ?? item.product.price;
+      return sum + price * item.quantity;
+    }, 0);
+
+    if (coupon.min_order_amount && totalCartSubtotal < coupon.min_order_amount) {
+      return {
+        discount: 0,
+        eligibleSubtotal: 0,
+        isValid: false,
+        reason: `সর্বনিম্ন ৳${coupon.min_order_amount.toLocaleString('en-BD')} অর্ডারে এই কুপনটি প্রযোজ্য।`,
+      };
+    }
+
+    let eligibleSubtotal = 0;
+    if (coupon.applies_to === 'all') {
+      eligibleSubtotal = totalCartSubtotal;
+    } else if (coupon.applies_to === 'specific' && coupon.product_ids && coupon.product_ids.length > 0) {
+      const matchingItems = items.filter((item) => coupon.product_ids!.includes(item.product.id));
+      eligibleSubtotal = matchingItems.reduce((sum, item) => {
+        const price = item.product.discount_price ?? item.product.price;
+        return sum + price * item.quantity;
+      }, 0);
+
+      if (eligibleSubtotal <= 0) {
+        return {
+          discount: 0,
+          eligibleSubtotal: 0,
+          isValid: false,
+          reason: 'আপনার কার্টের প্রোডাক্টগুলোর জন্য এই কুপনটি প্রযোজ্য নয়। এটি নির্দিষ্ট কিছু প্রোডাক্টে প্রযোজ্য।',
+        };
+      }
+    } else {
+      eligibleSubtotal = totalCartSubtotal;
+    }
+
+    let discount = 0;
+    if (coupon.discount_type === 'percentage') {
+      discount = Math.round((eligibleSubtotal * coupon.discount_value) / 100);
+      if (coupon.max_discount_amount && discount > coupon.max_discount_amount) {
+        discount = coupon.max_discount_amount;
+      }
+    } else {
+      discount = Math.min(coupon.discount_value, eligibleSubtotal);
+    }
+
+    return { discount, eligibleSubtotal, isValid: true };
+  }, []);
+
+  const applyCouponCode = useCallback((
+    code: string,
+    itemsToCalculate?: { product: Product; quantity: number }[]
+  ): { success: boolean; message: string; discount?: number } => {
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!cleanCode) {
+      return { success: false, message: 'অনুগ্রহ করে একটি কুপন কোড লিখুন।' };
+    }
+
+    const found = coupons.find((c) => c.code.trim().toUpperCase() === cleanCode);
+    if (!found) {
+      return { success: false, message: 'কুপন কোডটি সঠিক নয়। অনুগ্রহ করে যাচাই করে পুনরায় চেষ্টা করুন।' };
+    }
+
+    const items = itemsToCalculate || (buyNowItems && buyNowItems.length > 0 ? buyNowItems : cart);
+    if (!items || items.length === 0) {
+      return { success: false, message: 'কার্ট খালি থাকায় কুপন প্রয়োগ করা সম্ভব নয়।' };
+    }
+
+    const check = calculateDiscountForCoupon(found, items);
+    if (!check.isValid) {
+      return { success: false, message: check.reason || 'কুপনটি প্রযোজ্য নয়।' };
+    }
+
+    setAppliedCoupon(found);
+    return {
+      success: true,
+      message: `অভিনন্দন! "${found.code}" কুপন সক্রিয় হয়েছে এবং ৳${check.discount.toLocaleString('en-BD')} ছাড় প্রয়োগ করা হয়েছে!`,
+      discount: check.discount,
+    };
+  }, [coupons, cart, buyNowItems, calculateDiscountForCoupon]);
+
+  const removeAppliedCoupon = useCallback(() => {
+    setAppliedCoupon(null);
+  }, []);
+
+  // Coupon Admin CRUD Operations
+  const addCoupon = async (couponData: Omit<Coupon, 'id' | 'created_at' | 'usage_count'>): Promise<Coupon> => {
+    const newCoupon: Coupon = {
+      ...couponData,
+      id: `cpn-${Date.now()}`,
+      code: couponData.code.trim().toUpperCase(),
+      usage_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    setCoupons((prev) => [newCoupon, ...prev]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('coupons').insert([newCoupon]);
+      } catch (err) {
+        console.warn('Could not sync new coupon to Supabase:', err);
+      }
+    }
+
+    return newCoupon;
+  };
+
+  const updateCoupon = async (id: string, updates: Partial<Coupon>): Promise<Coupon> => {
+    let updated: Coupon | null = null;
+    setCoupons((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          updated = { ...c, ...updates, updated_at: new Date().toISOString() };
+          if (updates.code) updated.code = updates.code.trim().toUpperCase();
+          return updated;
+        }
+        return c;
+      })
+    );
+
+    if (isSupabaseConfigured && supabase && updated) {
+      try {
+        await supabase.from('coupons').update(updated).eq('id', id);
+      } catch (err) {
+        console.warn('Could not update coupon in Supabase:', err);
+      }
+    }
+
+    return updated || ({} as Coupon);
+  };
+
+  const deleteCoupon = async (id: string): Promise<void> => {
+    setCoupons((prev) => prev.filter((c) => c.id !== id));
+    if (appliedCoupon?.id === id) {
+      setAppliedCoupon(null);
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('coupons').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Could not delete coupon in Supabase:', err);
+      }
+    }
+  };
+
+  const toggleCouponStatus = async (id: string): Promise<void> => {
+    const found = coupons.find((c) => c.id === id);
+    if (found) {
+      await updateCoupon(id, { is_active: !found.is_active });
+    }
+  };
+
   // Check if Transaction ID is already used
   const checkTrxIdExists = useCallback((trxId: string): boolean => {
     if (!trxId) return false;
@@ -536,8 +745,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       quantity: number;
       price: number;
       subtotal: number;
+      selected_variants?: Record<string, string>;
     }[];
     subtotal: number;
+    coupon_code?: string;
+    coupon_discount?: number;
     delivery_charge: number;
     total: number;
     payment_method?: 'Cash on Delivery' | 'cash_on_delivery';
@@ -568,20 +780,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
 
     // Security check: Calculate delivery charge strictly from selected district
-    // Dynamically uses settings configured by Admin (Inside Dhaka = ৳80, Outside Dhaka = ৳120 by default)
     const validatedDeliveryCharge = calculateDeliveryCharge(
       orderData.district,
       settings?.delivery_charge,
       settings?.delivery_charge_outside
     );
 
-    // Formula: Total = Subtotal + Delivery Charge
-    const calculatedTotal = calculatedSubtotal + validatedDeliveryCharge;
+    const discountAmount = Math.max(0, orderData.coupon_discount || 0);
+
+    // Formula: Total = Subtotal - Discount + Delivery Charge
+    const calculatedTotal = Math.max(0, calculatedSubtotal - discountAmount) + validatedDeliveryCharge;
 
     const newOrder: Order = {
       ...orderData,
       id: newOrderId,
       subtotal: calculatedSubtotal,
+      coupon_code: orderData.coupon_code || undefined,
+      coupon_discount: discountAmount > 0 ? discountAmount : undefined,
       delivery_charge: validatedDeliveryCharge,
       total: calculatedTotal,
       payment_method: 'cash_on_delivery',
@@ -622,6 +837,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       })
     );
 
+    // Increment coupon usage count if coupon was used
+    if (orderData.coupon_code) {
+      const codeUpper = orderData.coupon_code.trim().toUpperCase();
+      setCoupons((prev) =>
+        prev.map((c) => {
+          if (c.code.toUpperCase() === codeUpper) {
+            const updated = { ...c, usage_count: (c.usage_count || 0) + 1 };
+            if (isSupabaseConfigured && supabase) {
+              supabase.from('coupons').update({ usage_count: updated.usage_count }).eq('id', c.id).then();
+            }
+            return updated;
+          }
+          return c;
+        })
+      );
+    }
+
     // Save order and payment record locally
     setOrders((prev) => [newOrder, ...prev]);
     setDeliveryPayments((prev) => [newPayment, ...prev]);
@@ -638,6 +870,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     }
 
+    setAppliedCoupon(null);
     clearCart();
     return newOrder;
   };
@@ -1375,12 +1608,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setOrders(INITIAL_ORDERS);
     setBanners(INITIAL_BANNERS);
     setSettings(INITIAL_SETTINGS);
+    setCoupons(INITIAL_COUPONS);
+    setAppliedCoupon(null);
     setCart([]);
     localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
     localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
     localStorage.removeItem(STORAGE_KEYS.ORDERS);
     localStorage.removeItem(STORAGE_KEYS.BANNERS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    localStorage.removeItem(STORAGE_KEYS.COUPONS);
   };
 
   const syncAllToSupabase = async (): Promise<{ success: boolean; message: string }> => {
@@ -1402,6 +1638,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const { error: banErr } = await client.from('banners').upsert(banners);
         if (banErr) throw banErr;
       }
+      if (coupons.length > 0) {
+        const { error: cpnErr } = await client.from('coupons').upsert(coupons);
+        if (cpnErr) throw cpnErr;
+      }
       const { error: setErr } = await client.from('settings').upsert({ id: 1, ...settings });
       if (setErr) throw setErr;
 
@@ -1417,8 +1657,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Increment views on mount removed as requested
-
   return (
     <StoreContext.Provider
       value={{
@@ -1430,6 +1668,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         cart,
         customers,
         deliveryPayments,
+        coupons,
+        appliedCoupon,
         adminUser,
         adminProfiles,
         addAdminProfile,
@@ -1444,6 +1684,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         clearCart,
         cartCount,
         cartTotal,
+
+        addCoupon,
+        updateCoupon,
+        deleteCoupon,
+        toggleCouponStatus,
+        applyCouponCode,
+        removeAppliedCoupon,
+        calculateDiscountForCoupon,
 
         placeOrder,
         updateOrderStatus,

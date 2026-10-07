@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, Check, AlertCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { formatBDT } from '../../utils/bangladesh';
 
@@ -14,7 +14,45 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClose,
   onCheckout,
 }) => {
-  const { cart, removeFromCart, updateCartQuantity, cartTotal, settings } = useStore();
+  const {
+    cart,
+    removeFromCart,
+    updateCartQuantity,
+    cartTotal,
+    settings,
+    appliedCoupon,
+    applyCouponCode,
+    removeAppliedCoupon,
+    calculateDiscountForCoupon,
+  } = useStore();
+
+  const [couponInput, setCouponInput] = useState('');
+  const [couponMsg, setCouponMsg] = useState<{ text: string; success: boolean } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  // Real-time coupon calculation for items in cart
+  const couponCheck = appliedCoupon ? calculateDiscountForCoupon(appliedCoupon, cart) : null;
+  const discountAmount = couponCheck && couponCheck.isValid ? couponCheck.discount : 0;
+
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponMsg(null);
+    if (!couponInput.trim()) return;
+
+    setIsApplyingCoupon(true);
+    const result = applyCouponCode(couponInput.trim(), cart);
+    setCouponMsg({ text: result.message, success: result.success });
+    setIsApplyingCoupon(false);
+
+    if (result.success) {
+      setCouponInput('');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    removeAppliedCoupon();
+    setCouponMsg(null);
+  };
 
   if (!isOpen) return null;
 
@@ -153,24 +191,102 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Drawer Footer */}
           {cart.length > 0 && (
-            <div className="p-4 sm:p-6 border-t border-neutral-800 bg-neutral-950/80 space-y-4">
-              <div className="space-y-1.5">
+            <div className="p-4 sm:p-6 border-t border-neutral-800 bg-neutral-950/90 space-y-4">
+              {/* Coupon Code Section */}
+              <div className="space-y-2">
+                {appliedCoupon && discountAmount > 0 ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-3.5 h-3.5 text-emerald-400" />
+                      <div>
+                        <span className="font-mono font-bold text-emerald-300">
+                          {appliedCoupon.code}
+                        </span>
+                        <span className="text-emerald-400 ml-1.5 font-bold">
+                          (-{formatBDT(discountAmount)})
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-neutral-800/60 transition-colors"
+                      title="Remove coupon"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyCoupon} className="space-y-1.5">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Coupon code (e.g. JM10)"
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono font-bold text-white placeholder-neutral-500 focus:outline-none focus:border-[#13487E]"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isApplyingCoupon || !couponInput.trim()}
+                        className="px-4 py-2 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] disabled:opacity-40 text-xs font-bold text-white uppercase tracking-wider transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {couponMsg && (
+                      <div
+                        className={`text-[11px] flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+                          couponMsg.success
+                            ? 'text-emerald-400 bg-emerald-950/30'
+                            : 'text-red-400 bg-red-950/30'
+                        }`}
+                      >
+                        {couponMsg.success ? (
+                          <Check className="w-3 h-3 flex-shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                        )}
+                        <span>{couponMsg.text}</span>
+                      </div>
+                    )}
+                  </form>
+                )}
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="space-y-1.5 pt-2 border-t border-neutral-850">
                 <div className="flex justify-between text-xs text-neutral-400">
-                  <span>Subtotal</span>
+                  <span>Subtotal (মূল্য)</span>
                   <span className="font-mono text-white font-bold">
                     {formatBDT(cartTotal)}
                   </span>
                 </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-xs text-emerald-400 font-bold">
+                    <span>Coupon Discount ({appliedCoupon?.code})</span>
+                    <span className="font-mono">
+                      - {formatBDT(discountAmount)}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-xs text-neutral-400">
                   <span>Delivery Charge</span>
                   <span className="font-mono text-white font-bold">
                     {formatBDT(settings.delivery_charge || 80)} (Dhaka) / ৳120 (Outside)
                   </span>
                 </div>
+
                 <div className="flex justify-between text-base font-black text-white pt-2 border-t border-neutral-800">
                   <span>Total (Cash on Delivery)</span>
-                  <span className="font-mono text-lg text-[#13487E]">
-                    {formatBDT(cartTotal + (settings.delivery_charge || 80))}
+                  <span className="font-mono text-lg text-[#6ea8fe]">
+                    {formatBDT(
+                      Math.max(0, cartTotal - discountAmount) + (settings.delivery_charge || 80)
+                    )}
                   </span>
                 </div>
               </div>
@@ -192,3 +308,4 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     </div>
   );
 };
+

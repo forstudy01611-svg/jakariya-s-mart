@@ -19,6 +19,7 @@ import {
   Download,
   Eye,
   FileText,
+  Tag,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order, DeliveryPaymentMethod } from '../../types';
@@ -76,7 +77,19 @@ interface CheckoutViewProps {
 }
 
 export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
-  const { cart, cartTotal, settings, placeOrder, checkTrxIdExists, buyNowItems, setBuyNowItems } = useStore();
+  const {
+    cart,
+    cartTotal,
+    settings,
+    placeOrder,
+    checkTrxIdExists,
+    buyNowItems,
+    setBuyNowItems,
+    appliedCoupon,
+    applyCouponCode,
+    removeAppliedCoupon,
+    calculateDiscountForCoupon,
+  } = useStore();
 
   // Customer Form State (5 fields: 4 required, 1 optional)
   const [fullName, setFullName] = useState('');
@@ -84,6 +97,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
   const [district, setDistrict] = useState('Dhaka');
   const [fullAddress, setFullAddress] = useState('');
   const [deliveryInstructions, setDeliveryInstructions] = useState('');
+
+  // Coupon Input State
+  const [couponInput, setCouponInput] = useState('');
+  const [couponMsg, setCouponMsg] = useState<{ text: string; success: boolean } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   // Input Refs for focusing without abrupt scroll jumping
   const nameInputRef = useRef<HTMLInputElement | null>(null);
@@ -170,6 +188,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
     ? buyNowItems.reduce((sum, item) => sum + (item.product.discount_price ?? item.product.price) * item.quantity, 0)
     : cartTotal;
 
+  // Real-time Coupon Calculation
+  const couponCheck = appliedCoupon ? calculateDiscountForCoupon(appliedCoupon, activeItems) : null;
+  const couponDiscount = couponCheck && couponCheck.isValid ? couponCheck.discount : 0;
+  const effectiveSubtotal = Math.max(0, activeSubtotal - couponDiscount);
+
   // Delivery Charge calculation based on District
   const isDhaka = isDhakaDistrict(district);
   const deliveryFee = calculateDeliveryCharge(
@@ -177,7 +200,27 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
     settings.delivery_charge,
     settings.delivery_charge_outside
   );
-  const grandTotal = activeSubtotal + deliveryFee;
+  const grandTotal = effectiveSubtotal + deliveryFee;
+
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponMsg(null);
+    if (!couponInput.trim()) return;
+
+    setIsApplyingCoupon(true);
+    const result = applyCouponCode(couponInput.trim(), activeItems);
+    setCouponMsg({ text: result.message, success: result.success });
+    setIsApplyingCoupon(false);
+
+    if (result.success) {
+      setCouponInput('');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    removeAppliedCoupon();
+    setCouponMsg(null);
+  };
 
   const currentBkashNumber = settings.bkash_number || '01700-123456';
   const currentNagadNumber = settings.nagad_number || '01800-123456';
@@ -337,6 +380,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
         customer_city: district,
         items: orderItems,
         subtotal: activeSubtotal,
+        coupon_code: appliedCoupon?.code,
+        coupon_discount: couponDiscount > 0 ? couponDiscount : undefined,
         delivery_charge: deliveryFee,
         total: grandTotal,
         payment_method: 'cash_on_delivery',
@@ -505,11 +550,88 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                   })}
                 </div>
 
+                {/* Coupon Code Box */}
+                <div className="pt-2 border-t border-neutral-800/80 space-y-2">
+                  {appliedCoupon && couponDiscount > 0 ? (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-emerald-400" />
+                        <div>
+                          <span className="font-mono font-bold text-emerald-300">
+                            {appliedCoupon.code}
+                          </span>
+                          <span className="text-emerald-400 ml-1.5 font-bold">
+                            (-{formatBDT(couponDiscount)})
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-neutral-800/60 transition-colors"
+                        title="Remove coupon"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Tag className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Coupon code (e.g. JM10)"
+                            value={couponInput}
+                            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                            className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono font-bold text-white placeholder-neutral-500 focus:outline-none focus:border-[#13487E]"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={isApplyingCoupon || !couponInput.trim()}
+                          className="px-4 py-2 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] disabled:opacity-40 text-xs font-bold text-white uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                      {couponMsg && (
+                        <div
+                          className={`text-[11px] flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+                            couponMsg.success
+                              ? 'text-emerald-400 bg-emerald-950/30'
+                              : 'text-red-400 bg-red-950/30'
+                          }`}
+                        >
+                          {couponMsg.success ? (
+                            <Check className="w-3 h-3 flex-shrink-0" />
+                          ) : (
+                            <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                          )}
+                          <span>{couponMsg.text}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="pt-3 border-t border-neutral-800 space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between text-neutral-400">
                     <span>Subtotal (পণ্যের মূল্য):</span>
                     <span className="font-mono font-bold text-white">{formatBDT(activeSubtotal)}</span>
                   </div>
+
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-400 font-bold">
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-3.5 h-3.5" />
+                        <span>Coupon Discount ({appliedCoupon?.code}):</span>
+                      </span>
+                      <span className="font-mono">- {formatBDT(couponDiscount)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-neutral-400">
                     <div className="flex items-center gap-1.5">
                       <span>Delivery Charge (ডেলিভারি চার্জ):</span>
@@ -521,7 +643,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                   </div>
                   <div className="flex justify-between text-base font-black text-white pt-2.5 border-t border-neutral-800">
                     <span>Total Amount (সর্বমোট):</span>
-                    <span className="font-mono text-xl text-[#13487E]">{formatBDT(grandTotal)}</span>
+                    <span className="font-mono text-xl text-[#6ea8fe]">{formatBDT(grandTotal)}</span>
                   </div>
                 </div>
               </div>

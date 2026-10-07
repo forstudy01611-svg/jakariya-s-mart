@@ -17,6 +17,7 @@ import {
   Check,
   Eye,
   Download,
+  Tag,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus, PaymentStatus } from '../../types';
@@ -231,6 +232,22 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
                   {formatBDT(order.subtotal)}
                 </span>
               </div>
+
+              {order.coupon_discount ? (
+                <div className="flex justify-between items-center text-xs text-emerald-400">
+                  <div className="flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5" />
+                    <span className="font-semibold">Coupon Discount:</span>
+                    <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/80">
+                      {order.coupon_code || 'APPLIED'}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-sm text-emerald-400">
+                    - {formatBDT(order.coupon_discount)}
+                  </span>
+                </div>
+              ) : null}
+
               <div className="flex justify-between items-center text-xs text-neutral-400">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-neutral-300">Delivery Charge:</span>
@@ -254,10 +271,11 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
                 <div className="flex flex-col">
                   <span>Total (Cash on Delivery):</span>
                   <span className="text-[10px] text-neutral-400 font-mono font-normal">
-                    Formula: Subtotal ({formatBDT(order.subtotal)}) + Delivery Charge ({formatBDT(order.delivery_charge)})
+                    Formula: Subtotal ({formatBDT(order.subtotal)})
+                    {order.coupon_discount ? ` - Coupon (${formatBDT(order.coupon_discount)})` : ''} + Delivery ({formatBDT(order.delivery_charge)})
                   </span>
                 </div>
-                <span className="font-mono text-[#13487E] text-xl font-black">
+                <span className="font-mono text-[#6ea8fe] text-xl font-black">
                   {formatBDT(order.total)}
                 </span>
               </div>

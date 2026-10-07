@@ -1,4 +1,4 @@
-import { Product, Category, Banner, StoreSettings, Order, DeliveryPayment } from '../types';
+import { Product, Category, Banner, StoreSettings, Order, DeliveryPayment, Coupon } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
@@ -259,3 +259,43 @@ export const INITIAL_SETTINGS: StoreSettings = {
 export const INITIAL_ORDERS: Order[] = [];
 
 export const INITIAL_DELIVERY_PAYMENTS: DeliveryPayment[] = [];
+ 
+export const INITIAL_COUPONS: Coupon[] = [
+   {
+     id: 'cpn-1',
+     code: 'JM10',
+     discount_type: 'percentage',
+     discount_value: 10,
+     applies_to: 'all',
+     min_order_amount: 500,
+     is_active: true,
+     usage_count: 5,
+     description: '10% discount on all store products for orders above ৳500',
+     created_at: '2026-01-20T10:00:00Z',
+   },
+   {
+     id: 'cpn-2',
+     code: 'CYBER20',
+     discount_type: 'percentage',
+     discount_value: 20,
+     applies_to: 'specific',
+     product_ids: ['prod-1', 'prod-2'],
+     min_order_amount: 1000,
+     is_active: true,
+     usage_count: 2,
+     description: '20% special discount on Cyber-Ronin Tee & Neo-Tokyo Hoodie',
+     created_at: '2026-01-25T10:00:00Z',
+   },
+   {
+     id: 'cpn-3',
+     code: 'WELCOME100',
+     discount_type: 'fixed',
+     discount_value: 100,
+     applies_to: 'all',
+     min_order_amount: 1200,
+     is_active: true,
+     usage_count: 8,
+     description: 'Flat ৳100 discount on your order above ৳1200',
+     created_at: '2026-01-28T10:00:00Z',
+   },
+];

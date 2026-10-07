@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Plus,
+  Tag,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { AUTHORIZED_ADMIN_EMAIL } from '../../types';
@@ -56,6 +57,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       label: 'Products',
       path: '/admin/products',
       icon: Package,
+    },
+    {
+      label: 'Coupons',
+      path: '/admin/coupons',
+      icon: Tag,
     },
     {
       label: 'Categories',

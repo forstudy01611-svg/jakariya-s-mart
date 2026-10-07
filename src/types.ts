@@ -69,6 +69,25 @@ export interface OrderItem {
   selected_variants?: Record<string, string>; // e.g., {"Size": "M", "Color": "Blue"}
 }
 
+export interface Coupon {
+  id: string;
+  code: string; // e.g. "EID20", "JM10" (uppercase)
+  discount_type: 'percentage' | 'fixed'; // percentage (e.g. 10%) or fixed BDT (e.g. ৳200)
+  discount_value: number; // e.g. 10 for 10% or 200 for 200 BDT
+  applies_to: 'all' | 'specific'; // 'all' products or 'specific' products
+  product_ids?: string[]; // IDs of products when applies_to === 'specific'
+  min_order_amount?: number; // Minimum subtotal required (optional)
+  max_discount_amount?: number; // Maximum discount cap in BDT (for percentage discounts)
+  start_date?: string;
+  end_date?: string;
+  is_active: boolean;
+  usage_count: number;
+  usage_limit?: number; // Max total usage times (optional)
+  description?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface Order {
   id: string;
   customer_name: string;
@@ -84,6 +103,8 @@ export interface Order {
   customer_city?: string;
   items: OrderItem[];
   subtotal: number;
+  coupon_code?: string;
+  coupon_discount?: number;
   delivery_charge: number;
   total: number;
   payment_method: 'Cash on Delivery' | 'cash_on_delivery';

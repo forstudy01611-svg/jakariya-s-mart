@@ -253,6 +253,12 @@ Date: ${new Date(order.created_at).toLocaleString('en-GB')}`;
           <span>Items Subtotal:</span>
           <span style="font-family: monospace; font-weight: bold;">৳${order.subtotal.toLocaleString('en-BD')}</span>
         </div>
+        ${order.coupon_discount ? `
+        <div class="total-row" style="color: #059669;">
+          <span>Coupon Discount (${order.coupon_code || 'Applied'}):</span>
+          <span style="font-family: monospace; font-weight: bold;">- ৳${order.coupon_discount.toLocaleString('en-BD')}</span>
+        </div>
+        ` : ''}
         <div class="total-row">
           <span>Delivery Charge (${order.district?.toLowerCase() === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}):</span>
           <span style="font-family: monospace; font-weight: bold;">৳${order.delivery_charge.toLocaleString('en-BD')}</span>
@@ -263,7 +269,7 @@ Date: ${new Date(order.created_at).toLocaleString('en-GB')}`;
         </div>
         <div class="grand-total">
           <span>Cash on Delivery Due:</span>
-          <span style="font-family: monospace;">৳${order.subtotal.toLocaleString('en-BD')}</span>
+          <span style="font-family: monospace;">৳${Math.max(0, order.subtotal - (order.coupon_discount || 0)).toLocaleString('en-BD')}</span>
         </div>
         <div style="font-size: 11px; color: #6b7280; text-align: right; margin-top: 4px;">
           Total Order Value: ৳${order.total.toLocaleString('en-BD')}
@@ -511,6 +517,14 @@ Date: ${new Date(order.created_at).toLocaleString('en-GB')}`;
               <span>Items Subtotal (পণ্যের মূল্য):</span>
               <span className="font-mono font-bold text-neutral-900">{formatBDT(order.subtotal)}</span>
             </div>
+
+            {order.coupon_discount ? (
+              <div className="flex justify-between text-emerald-600 font-medium">
+                <span>Coupon Discount ({order.coupon_code || 'Promo'}):</span>
+                <span className="font-mono font-bold">- {formatBDT(order.coupon_discount)}</span>
+              </div>
+            ) : null}
+
             <div className="flex justify-between">
               <span>Delivery Fee ({order.district?.toLowerCase() === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}):</span>
               <span className="font-mono font-bold text-neutral-900">{formatBDT(order.delivery_charge)}</span>
@@ -521,7 +535,7 @@ Date: ${new Date(order.created_at).toLocaleString('en-GB')}`;
             </div>
             <div className="flex justify-between items-baseline pt-2.5 border-t-2 border-neutral-900 text-base font-black text-[#13487E]">
               <span>Cash on Delivery Due:</span>
-              <span className="font-mono text-lg">{formatBDT(order.subtotal)}</span>
+              <span className="font-mono text-lg">{formatBDT(Math.max(0, order.subtotal - (order.coupon_discount || 0)))}</span>
             </div>
             <div className="text-[10px] text-neutral-400 text-right">
               Total Order Value: {formatBDT(order.total)}
