@@ -30,7 +30,7 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              {settings.tagline || 'Modern Streetwear & Anime Apparel'}. Re-engineered silhouettes, heavyweight custom fabrics, and tactical urban design.
+              {settings.tagline || "Jakariya's Mart - Your Trusted Online Shopping Destination"}. Guaranteed authentic quality, fast nationwide delivery with cash on delivery, and 100% customer satisfaction.
             </p>
             <div className="flex items-center gap-3 pt-2">
               {settings.social_links.instagram && (

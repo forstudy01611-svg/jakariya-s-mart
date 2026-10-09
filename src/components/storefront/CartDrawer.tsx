@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, Check, AlertCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formatBDT } from '../../utils/bangladesh';
 
 interface CartDrawerProps {
@@ -25,6 +26,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     removeAppliedCoupon,
     calculateDiscountForCoupon,
   } = useStore();
+  const { t, language } = useLanguage();
 
   const [couponInput, setCouponInput] = useState('');
   const [couponMsg, setCouponMsg] = useState<{ text: string; success: boolean } | null>(null);
@@ -71,7 +73,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-[#13487E]" />
               <h2 className="text-lg font-black uppercase tracking-tight font-['Space_Grotesk']">
-                Your Shopping Bag ({cart.reduce((s, i) => s + i.quantity, 0)})
+                {t('your_cart')} ({cart.reduce((s, i) => s + i.quantity, 0)})
               </h2>
             </div>
             <button
@@ -92,17 +94,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white uppercase tracking-wider">
-                    Your bag is empty
+                    {t('cart_empty')}
                   </h3>
                   <p className="text-xs text-neutral-400 mt-1 max-w-xs">
-                    Explore the latest Jakariya's Mart streetwear drops and gear up for the season.
+                    {language === 'bn' ? 'আমাদের নতুন কালেকশন ঘুরে দেখুন এবং পছন্দের পণ্য অর্ডার করুন।' : "Explore the latest Jakariya's Mart drops and gear up for the season."}
                   </p>
                 </div>
                 <button
                   onClick={onClose}
                   className="px-6 py-2.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-xs font-bold text-[#13487E] border border-neutral-800 uppercase tracking-wider transition-colors"
                 >
-                  Start Shopping
+                  {language === 'bn' ? 'শপিং শুরু করুন' : 'Start Shopping'}
                 </button>
               </div>
             ) : (
@@ -259,7 +261,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               {/* Price Breakdown */}
               <div className="space-y-1.5 pt-2 border-t border-neutral-850">
                 <div className="flex justify-between text-xs text-neutral-400">
-                  <span>Subtotal (মূল্য)</span>
+                  <span>{t('subtotal')}</span>
                   <span className="font-mono text-white font-bold">
                     {formatBDT(cartTotal)}
                   </span>
@@ -267,7 +269,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-xs text-emerald-400 font-bold">
-                    <span>Coupon Discount ({appliedCoupon?.code})</span>
+                    <span>{language === 'bn' ? `কুপন ছাড় (${appliedCoupon?.code})` : `Coupon Discount (${appliedCoupon?.code})`}</span>
                     <span className="font-mono">
                       - {formatBDT(discountAmount)}
                     </span>
@@ -275,14 +277,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 )}
 
                 <div className="flex justify-between text-xs text-neutral-400">
-                  <span>Delivery Charge</span>
+                  <span>{t('delivery_charge')}</span>
                   <span className="font-mono text-white font-bold">
-                    {formatBDT(settings.delivery_charge || 80)} (Dhaka) / ৳120 (Outside)
+                    {formatBDT(settings.delivery_charge || 80)} ({language === 'bn' ? 'ঢাকা' : 'Dhaka'}) / ৳120 ({language === 'bn' ? 'ঢাকার বাইরে' : 'Outside'})
                   </span>
                 </div>
 
                 <div className="flex justify-between text-base font-black text-white pt-2 border-t border-neutral-800">
-                  <span>Total (Cash on Delivery)</span>
+                  <span>{t('total')} ({language === 'bn' ? 'ক্যাশ অন ডেলিভারি' : 'Cash on Delivery'})</span>
                   <span className="font-mono text-lg text-[#6ea8fe]">
                     {formatBDT(
                       Math.max(0, cartTotal - discountAmount) + (settings.delivery_charge || 80)
@@ -298,7 +300,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 }}
                 className="w-full py-3.5 px-6 rounded-xl bg-[#13487E] hover:bg-[#0d3a66] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#13487E]/25"
               >
-                <span>Proceed to Checkout</span>
+                <span>{t('proceed_to_checkout')}</span>
                 <ArrowRight className="w-4 h-4 stroke-[3]" />
               </button>
             </div>

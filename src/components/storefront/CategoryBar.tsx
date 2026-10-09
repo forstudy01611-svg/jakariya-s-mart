@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CategoryBarProps {
   selectedCategory: string | null;
@@ -11,6 +12,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   onSelectCategory,
 }) => {
   const { categories, products } = useStore();
+  const { t } = useLanguage();
   const activeCategories = categories
     .filter((c) => c.is_active)
     .sort((a, b) => a.display_order - b.display_order);
@@ -32,7 +34,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700'
             }`}
           >
-            <span>All Products</span>
+            <span>{t('all_products')}</span>
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                 selectedCategory === null ? 'bg-black/20 text-black' : 'bg-neutral-800 text-neutral-400'

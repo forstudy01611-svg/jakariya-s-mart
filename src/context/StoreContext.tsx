@@ -29,6 +29,12 @@ import {
 } from '../data/initialData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { calculateDeliveryCharge } from '../utils/bangladesh';
+import {
+  safeSetItem,
+  cleanupLegacyStorage,
+  compressImageFile,
+  idbStorage,
+} from '../utils/storage';
 
 interface StoreContextType {
   products: Product[];
@@ -271,88 +277,74 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [authInitialized, setAuthInitialized] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync to local storage
+  // Startup maintenance: clean legacy bloated localStorage keys and check IndexedDB hydration
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-    } catch (e) {
-      console.error('Failed to save products to localStorage', e);
-    }
+    cleanupLegacyStorage();
+
+    const hydrateFromIdb = async () => {
+      try {
+        const idbProducts = await idbStorage.getItem<Product[]>(STORAGE_KEYS.PRODUCTS);
+        if (idbProducts && Array.isArray(idbProducts) && idbProducts.length > 0) {
+          setProducts((current) => {
+            // If current in-memory products is still the initial stock and IDB has custom products, sync
+            if (current.length === INITIAL_PRODUCTS.length && current[0]?.id === INITIAL_PRODUCTS[0]?.id && idbProducts.length > 0) {
+              return idbProducts;
+            }
+            return current;
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    hydrateFromIdb();
+  }, []);
+
+  // Safe sync to storage with QuotaExceededError protection and IndexedDB persistence
+  useEffect(() => {
+    safeSetItem(STORAGE_KEYS.PRODUCTS, products);
   }, [products]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
-    } catch (e) {
-      console.error('Failed to save categories to localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.CATEGORIES, categories);
   }, [categories]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    } catch (e) {
-      console.error('Failed to save orders to localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.ORDERS, orders);
   }, [orders]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.BANNERS, JSON.stringify(banners));
-    } catch (e) {
-      console.error('Failed to save banners to localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.BANNERS, banners);
   }, [banners]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-    } catch (e) {
-      console.error('Failed to save settings to localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.SETTINGS, settings);
   }, [settings]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
-    } catch (e) {
-      console.error('Failed to save cart to localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.CART, cart);
   }, [cart]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ADMIN_PROFILES, JSON.stringify(adminProfiles));
-    } catch (e) {
-      console.error('Failed to save admin profiles', e);
-    }
+    safeSetItem(STORAGE_KEYS.ADMIN_PROFILES, adminProfiles);
   }, [adminProfiles]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.DELIVERY_PAYMENTS, JSON.stringify(deliveryPayments));
-    } catch (e) {
-      console.error('Failed to save delivery payments', e);
-    }
+    safeSetItem(STORAGE_KEYS.DELIVERY_PAYMENTS, deliveryPayments);
   }, [deliveryPayments]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(coupons));
-    } catch (e) {
-      console.error('Failed to save coupons', e);
-    }
+    safeSetItem(STORAGE_KEYS.COUPONS, coupons);
   }, [coupons]);
 
   useEffect(() => {
-    try {
-      if (adminUser) {
-        localStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, JSON.stringify(adminUser));
-      } else {
+    if (adminUser) {
+      safeSetItem(STORAGE_KEYS.ADMIN_SESSION, adminUser);
+    } else {
+      try {
         localStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
-      }
-    } catch (e) {
-      console.error('Failed to save admin session', e);
+      } catch {}
+      idbStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION).catch(() => {});
     }
   }, [adminUser]);
 
@@ -1431,15 +1423,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     }
 
-    // High quality data URL fallback
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
+    // High quality, lightweight compressed data URL fallback (reduces 5MB+ photos to ~40KB-70KB)
+    return await compressImageFile(file, 900, 0.75);
   };
 
   // Admin Auth - Strictly restricted to authorized username: junaid&jakariya and password: jakaria.jaku4825
@@ -1613,12 +1598,20 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setCoupons(INITIAL_COUPONS);
     setAppliedCoupon(null);
     setCart([]);
-    localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
-    localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
-    localStorage.removeItem(STORAGE_KEYS.ORDERS);
-    localStorage.removeItem(STORAGE_KEYS.BANNERS);
-    localStorage.removeItem(STORAGE_KEYS.SETTINGS);
-    localStorage.removeItem(STORAGE_KEYS.COUPONS);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+      localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
+      localStorage.removeItem(STORAGE_KEYS.ORDERS);
+      localStorage.removeItem(STORAGE_KEYS.BANNERS);
+      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+      localStorage.removeItem(STORAGE_KEYS.COUPONS);
+    } catch {}
+    idbStorage.removeItem(STORAGE_KEYS.PRODUCTS).catch(() => {});
+    idbStorage.removeItem(STORAGE_KEYS.CATEGORIES).catch(() => {});
+    idbStorage.removeItem(STORAGE_KEYS.ORDERS).catch(() => {});
+    idbStorage.removeItem(STORAGE_KEYS.BANNERS).catch(() => {});
+    idbStorage.removeItem(STORAGE_KEYS.SETTINGS).catch(() => {});
+    idbStorage.removeItem(STORAGE_KEYS.COUPONS).catch(() => {});
   };
 
   const syncAllToSupabase = async (): Promise<{ success: boolean; message: string }> => {

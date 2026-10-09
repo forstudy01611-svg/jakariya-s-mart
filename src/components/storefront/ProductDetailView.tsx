@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, ShoppingBag, Check, ShieldCheck, Truck, RefreshCw, ArrowLeft, AlertCircle } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, Check, ShieldCheck, Truck, RefreshCw, ArrowLeft, AlertCircle, Maximize2 } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formatBDT } from '../../utils/bangladesh';
 import { StoreNavbar } from './StoreNavbar';
 import { StoreFooter } from './StoreFooter';
 import { CartDrawer } from './CartDrawer';
+import { ImageLightboxModal } from './ImageLightboxModal';
 import { motion } from 'motion/react';
 
 interface ProductDetailViewProps {
@@ -18,8 +20,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   onNavigate,
 }) => {
   const { products, categories, settings, addToCart, setBuyNowItems } = useStore();
+  const { t } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
@@ -168,18 +172,37 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 className="inline-flex items-center gap-2 text-xs font-bold text-neutral-500 hover:text-white transition-colors mb-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Catalog</span>
+                <span>{t('back_to_catalog')}</span>
               </button>
 
-              <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-inner">
+              {/* Main Product Image - Click to zoom in large screen */}
+              <div 
+                onClick={() => setIsLightboxOpen(true)}
+                className="relative aspect-square w-full rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-inner group/preview cursor-zoom-in"
+                title={t('click_to_zoom')}
+              >
                 <img
                   src={product.images[selectedImageIndex] || product.images[0]}
                   alt={product.name}
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-cover object-center group-hover/preview:scale-105 transition-transform duration-500"
                 />
+
+                {/* Corner Zoom Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLightboxOpen(true);
+                  }}
+                  className="absolute bottom-4 right-4 z-10 p-2.5 rounded-xl bg-black/75 hover:bg-[#13487E] text-white border border-neutral-700/80 backdrop-blur-xs transition-all shadow-lg hover:scale-110 active:scale-95"
+                  title={t('click_to_zoom')}
+                  aria-label="Enlarge image"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+
                 {product.discount_price && product.discount_price < product.price && (
                   <span className="absolute top-5 left-5 bg-[#13487E] text-white text-xs font-black uppercase px-3 py-1.5 rounded-lg shadow-lg">
-                    SALE
+                    {t('save')} {Math.round(((product.price - product.discount_price) / product.price) * 100)}%
                   </span>
                 )}
               </div>
@@ -192,7 +215,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
-                        selectedImageIndex === idx ? 'border-[#13487E] scale-105' : 'border-neutral-800 opacity-60 hover:opacity-100'
+                        selectedImageIndex === idx ? 'border-[#13487E] scale-105 shadow-md shadow-[#13487E]/30' : 'border-neutral-800 opacity-60 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -230,16 +253,16 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                       {formatBDT(product.price)}
                     </span>
                   )}
-                  {product.stock > 0 && (
+                    {product.stock > 0 && (
                     <span className="ml-auto text-xs font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 px-3 py-1 rounded-full uppercase tracking-wider">
-                      {product.stock} Units Ready
+                      {product.stock} {t('units_ready')}
                     </span>
                   )}
                 </div>
 
                 {/* Description */}
                 <div className="pt-4 border-t border-neutral-800/60">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Product Description</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">{t('product_description')}</h3>
                   <p className="text-base text-neutral-300 leading-relaxed">
                     {product.description}
                   </p>
@@ -251,7 +274,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     {product.variants.map((v) => (
                       <div key={v.id} className="space-y-3">
                         <label className="text-xs font-bold text-neutral-400 uppercase tracking-[0.2em] block">
-                          Select {v.name} (একাধিক সিলেক্ট করা যাবে)
+                          {t('select_variant')} {v.name} {t('multiple_allowed')}
                         </label>
                         <div className="space-y-2">
                           {v.options.map((opt) => {
@@ -320,7 +343,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   {(!product.variants || product.variants.length === 0) && (
                     <div className="space-y-2">
                       <span className="text-xs uppercase font-bold tracking-[0.2em] text-neutral-500">
-                        Quantity
+                        {t('quantity')}
                       </span>
                       <div className="flex items-center border-2 border-neutral-800 rounded-xl bg-neutral-950/80 p-1 w-fit">
                         <button
@@ -362,14 +385,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                       {added ? (
                         <>
                           <Check className="w-5 h-5 stroke-[4]" />
-                          <span>Added to Bag</span>
+                          <span>{t('added')}</span>
                         </>
                       ) : isOutOfStock ? (
-                        <span>Out of Stock</span>
+                        <span>{t('sold_out')}</span>
                       ) : (
                         <>
                           <ShoppingBag className="w-5 h-5" />
-                          <span>Add to Bag</span>
+                          <span>{t('add_to_bag')}</span>
                         </>
                       )}
                     </button>
@@ -385,7 +408,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                       }`}
                     >
                       <Check className="w-5 h-5 stroke-[4]" />
-                      <span>Buy Now • {formatBDT(totalSelectedPrice)}</span>
+                      <span>{t('order_now')} • {formatBDT(totalSelectedPrice)}</span>
                     </button>
                   </div>
                 </div>
@@ -396,19 +419,19 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     <div className="w-10 h-10 rounded-xl bg-[#13487E]/10 flex items-center justify-center text-[#13487E]">
                       <Truck className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Fast Courier</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('fast_delivery_guarantee')}</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-neutral-950/40 border border-neutral-800 flex flex-col items-center text-center gap-2 group hover:border-[#13487E]/30 transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-[#13487E]/10 flex items-center justify-center text-[#13487E]">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Authentic</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('cash_on_delivery_guarantee')}</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-neutral-950/40 border border-neutral-800 flex flex-col items-center text-center gap-2 group hover:border-[#13487E]/30 transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-[#13487E]/10 flex items-center justify-center text-[#13487E]">
                       <RefreshCw className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Easy Swap</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('easy_replacement_guarantee')}</span>
                   </div>
                 </div>
               </div>
@@ -429,6 +452,16 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           setIsCartOpen(false);
           onNavigate('/checkout');
         }}
+      />
+
+      {/* Fullscreen High-Resolution Image Lightbox for PC & Mobile */}
+      <ImageLightboxModal
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        images={product.images && product.images.length > 0 ? product.images : []}
+        initialIndex={selectedImageIndex}
+        product={product}
+        onBuyNow={handleBuyNowClick}
       />
     </div>
   );

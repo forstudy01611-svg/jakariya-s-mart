@@ -7,8 +7,9 @@ import { ProductDetailModal } from './ProductDetailModal';
 import { CartDrawer } from './CartDrawer';
 import { StoreFooter } from './StoreFooter';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { Product, Order } from '../../types';
-import { SlidersHorizontal, Sparkles, AlertCircle } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, AlertCircle, ShieldCheck, Truck, Headphones, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface StorefrontViewProps {
@@ -16,7 +17,8 @@ interface StorefrontViewProps {
 }
 
 export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) => {
-  const { products, categories, addToCart } = useStore();
+  const { products, categories, addToCart, settings } = useStore();
+  const { t } = useLanguage();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,13 +113,13 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl sm:text-3xl font-black text-white font-['Space_Grotesk'] tracking-tight uppercase">
                   {searchQuery
-                    ? `Results for "${searchQuery}"`
+                    ? `${t('search_results_for')} "${searchQuery}"`
                     : activeCategoryObj
                     ? activeCategoryObj.name
-                    : 'Current Releases'}
+                    : t('current_releases')}
                 </h2>
                 <span className="text-xs font-mono font-bold text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">
-                  {filteredProducts.length} items
+                  {filteredProducts.length} {t('items_count')}
                 </span>
               </div>
               {activeCategoryObj?.description && !searchQuery && (
@@ -135,10 +137,10 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#13487E] cursor-pointer"
               >
-                <option value="featured">Featured Drops</option>
-                <option value="newest">Newest Arrivals</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="featured">{t('sort_featured')}</option>
+                <option value="newest">{t('sort_newest')}</option>
+                <option value="price-asc">{t('sort_price_asc')}</option>
+                <option value="price-desc">{t('sort_price_desc')}</option>
               </select>
             </div>
           </div>
@@ -148,10 +150,10 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
             <div className="min-h-[300px] rounded-2xl bg-neutral-900/40 border border-neutral-800/80 flex flex-col items-center justify-center p-8 text-center space-y-3">
               <AlertCircle className="w-10 h-10 text-neutral-500" />
               <h3 className="text-base font-bold text-white uppercase tracking-wider">
-                No products found
+                {t('no_products_found')}
               </h3>
               <p className="text-xs text-neutral-400 max-w-md">
-                We couldn't find any products matching your filter criteria. Try clearing search or selecting another category.
+                {t('no_products_desc')}
               </p>
               <button
                 onClick={() => {
@@ -160,7 +162,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
                 }}
                 className="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-white transition-colors"
               >
-                Reset Filters
+                {t('reset_filters')}
               </button>
             </div>
           ) : (
@@ -177,47 +179,47 @@ export const StorefrontView: React.FC<StorefrontViewProps> = ({ onNavigate }) =>
           )}
         </section>
 
-        {/* Feature Highlights Banner */}
+        {/* Store Trust & Feature Highlights Banner (Above Footer) */}
         <section className="border-t border-neutral-800 bg-[#0d0d11] py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-xl bg-neutral-950/60 border border-neutral-800 flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-[#13487E]/10 border border-[#13487E]/20 flex items-center justify-center text-[#13487E] flex-shrink-0">
-                <Sparkles className="w-5 h-5" />
+            <div className="p-6 rounded-xl bg-neutral-950/60 border border-neutral-800 flex items-start gap-4 hover:border-neutral-700 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-[#13487E]/10 border border-[#13487E]/20 flex items-center justify-center text-[#13487E] flex-shrink-0">
+                <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-                  260+ GSM Heavyweight
+                  {t('highlight_quality_title')}
                 </h4>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Custom combed cotton engineered for structural drape, wash endurance, and luxury comfort.
+                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                  {t('highlight_quality_desc')}
                 </p>
               </div>
             </div>
 
-            <div className="p-6 rounded-xl bg-neutral-950/60 border border-neutral-800 flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-[#13487E]/10 border border-[#13487E]/20 flex items-center justify-center text-[#13487E] flex-shrink-0">
-                <span className="font-mono font-black text-sm">24H</span>
+            <div className="p-6 rounded-xl bg-neutral-950/60 border border-neutral-800 flex items-start gap-4 hover:border-neutral-700 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-[#13487E]/10 border border-[#13487E]/20 flex items-center justify-center text-[#13487E] flex-shrink-0">
+                <Truck className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-                  Fast Metro Dispatch
+                  {t('highlight_delivery_title')}
                 </h4>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Orders packaged securely in signature Jakariya's Mart dust bags with real-time delivery status updates.
+                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                  {t('highlight_delivery_desc')}
                 </p>
               </div>
             </div>
 
-            <div className="p-6 rounded-xl bg-neutral-950/60 border border-neutral-800 flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-[#13487E]/10 border border-[#13487E]/20 flex items-center justify-center text-[#13487E] flex-shrink-0">
-                <span className="font-mono font-black text-sm">100%</span>
+            <div className="p-6 rounded-xl bg-neutral-950/60 border border-neutral-800 flex items-start gap-4 hover:border-neutral-700 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-[#13487E]/10 border border-[#13487E]/20 flex items-center justify-center text-[#13487E] flex-shrink-0">
+                <Headphones className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-                  Original Authenticity
+                  {t('highlight_support_title')}
                 </h4>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Direct from the official Jakariya's Mart atelier. No bootlegs, zero compromises on anime & techwear aesthetics.
+                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                  {t('highlight_support_desc')}
                 </p>
               </div>
             </div>

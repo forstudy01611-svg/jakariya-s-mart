@@ -1,8 +1,10 @@
-import React from 'react';
-import { Plus, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Check, Maximize2 } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formatBDT } from '../../utils/bangladesh';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 interface ProductCardProps {
   product: Product;
@@ -16,12 +18,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onBuyNow,
 }) => {
   const { categories, settings, addToCart, cart } = useStore();
+  const { t } = useLanguage();
   const [added, setAdded] = React.useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const category = categories.find((c) => c.id === product.category_id);
   const cartItem = cart.find((i) => i.product.id === product.id);
   const cartQuantity = cartItem?.quantity || 0;
   const isOutOfStock = product.stock <= 0;
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLightboxOpen(true);
+  };
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -50,8 +59,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => onNavigate(`/product/${product.id}`)}
       className="group relative bg-neutral-900/60 rounded-xl border border-neutral-800 hover:border-neutral-700 overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-black/50"
     >
-      {/* Image Container */}
-      <div className="relative aspect-square w-full bg-neutral-950 overflow-hidden">
+      {/* Image Container - Clicking expands image in large lightbox */}
+      <div 
+        onClick={handleImageClick}
+        className="relative aspect-square w-full bg-neutral-950 overflow-hidden group/img cursor-zoom-in"
+        title={t('click_to_zoom')}
+      >
         <img
           src={product.images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
           alt={product.name}
@@ -59,16 +72,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           loading="lazy"
         />
 
+        {/* Zoom Hint Icon in Corner */}
+        <button
+          onClick={handleImageClick}
+          className="absolute bottom-2.5 right-2.5 z-10 p-1.5 sm:p-2 rounded-lg bg-black/70 hover:bg-[#13487E] text-white border border-neutral-700/80 backdrop-blur-xs transition-all shadow-md group-hover/img:scale-110 active:scale-95"
+          title={t('click_to_zoom')}
+          aria-label="Expand image"
+        >
+          <Maximize2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        </button>
+
         {/* Badges Overlay */}
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 items-start">
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 items-start pointer-events-none">
           {discountPercent && (
             <span className="bg-[#13487E] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider shadow">
-              SAVE {discountPercent}%
+              {t('save')} {discountPercent}%
             </span>
           )}
           {product.is_featured && (
             <span className="bg-neutral-900/90 backdrop-blur border border-neutral-700 text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded tracking-wider">
-              HOT DROP
+              {t('hot_drop')}
             </span>
           )}
         </div>
@@ -77,13 +100,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {isOutOfStock ? (
           <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center">
             <span className="bg-red-500/20 text-red-400 border border-red-500/40 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded">
-              SOLD OUT
+              {t('sold_out')}
             </span>
           </div>
         ) : product.stock <= 5 ? (
           <div className="absolute bottom-2 left-2">
             <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
-              Only {product.stock} left
+              {t('only_left', { n: product.stock })}
             </span>
           </div>
         ) : null}
@@ -131,14 +154,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   ? 'bg-emerald-500 text-black border-emerald-500'
                   : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
               }`}
-              title={isOutOfStock ? 'Out of stock' : 'Add to cart'}
+              title={isOutOfStock ? t('sold_out') : t('add')}
             >
               {added ? (
                 <Check className="w-3 h-3 stroke-[3]" />
               ) : (
                 <Plus className="w-3 h-3" />
               )}
-              <span>{added ? 'Added' : 'Add'}</span>
+              <span>{added ? t('added') : t('add')}</span>
             </button>
 
             <button
@@ -157,11 +180,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   : 'bg-[#13487E] hover:bg-[#0d3a66] text-white shadow-lg shadow-[#13487E]/20'
               }`}
             >
-              <span>Buy Now</span>
+              <span>{t('buy_now')}</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Responsive Fullscreen Image Lightbox */}
+      <ImageLightboxModal
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        images={product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80']}
+        initialIndex={0}
+        product={product}
+        onNavigateProduct={onNavigate}
+        onBuyNow={(prod, qty) => {
+          if (prod.variants && prod.variants.length > 0) {
+            onNavigate(`/product/${prod.id}`);
+          } else {
+            onBuyNow(prod, qty);
+          }
+        }}
+      />
     </div>
   );
 };

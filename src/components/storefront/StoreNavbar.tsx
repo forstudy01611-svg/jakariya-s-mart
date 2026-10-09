@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Search, Menu, X, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface StoreNavbarProps {
   onNavigate: (route: string) => void;
@@ -20,6 +21,7 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
   onSearchChange,
 }) => {
   const { settings, categories, cartCount, adminUser } = useStore();
+  const { language, toggleLanguage, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -77,7 +79,7 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
                   : 'text-neutral-300 hover:text-white hover:bg-neutral-900/60'
               }`}
             >
-              All Drops
+              {t('all_drops')}
             </button>
             {activeCategories.slice(0, 5).map((category) => (
               <button
@@ -102,7 +104,7 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search streetwear, hoodies..."
+                placeholder={t('search_placeholder')}
                 className="w-48 lg:w-64 bg-neutral-900/80 border border-neutral-800 text-sm text-white placeholder-neutral-500 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-[#13487E] transition-all"
               />
               <Search className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
@@ -125,21 +127,36 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
               <Search className="w-5 h-5" />
             </button>
 
-            {/* Cart Button with Count Badge */}
-            <button
-              onClick={onOpenCart}
-              className="relative flex items-center justify-center p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 text-white hover:border-[#13487E] hover:text-[#13487E] transition-all"
-              aria-label="Shopping Cart"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#13487E] text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-[#0a0a0c] animate-pulse">
-                  {cartCount}
+              {/* Language Switcher: Small Square Button for Customer */}
+              <button
+                onClick={toggleLanguage}
+                className="w-10 h-10 aspect-square rounded-lg bg-neutral-900 border border-neutral-800 hover:border-[#13487E] text-white flex flex-col items-center justify-center transition-all group shadow-sm active:scale-95"
+                title={language === 'bn' ? 'Switch to English' : 'বাংলায় দেখুন'}
+                aria-label="Toggle language"
+              >
+                <span className="font-mono text-xs font-black tracking-tight group-hover:text-[#13487E] transition-colors leading-none">
+                  {language === 'bn' ? 'EN' : 'বাং'}
                 </span>
-              )}
-            </button>
+                <span className="text-[9px] font-semibold text-neutral-400 group-hover:text-neutral-200 mt-0.5 leading-none">
+                  {language === 'bn' ? 'বাংলা' : 'ENG'}
+                </span>
+              </button>
+
+              {/* Cart Button with Count Badge */}
+              <button
+                onClick={onOpenCart}
+                className="relative flex items-center justify-center p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 text-white hover:border-[#13487E] hover:text-[#13487E] transition-all"
+                aria-label="Shopping Cart"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#13487E] text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-[#0a0a0c] animate-pulse">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* Mobile Search Bar Expansion */}
         {searchOpen && (
@@ -149,7 +166,7 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search apparel, accessories..."
+                placeholder={t('search_placeholder')}
                 className="w-full bg-neutral-900 border border-neutral-800 text-sm text-white placeholder-neutral-500 rounded-lg pl-9 pr-8 py-2.5 focus:outline-none focus:border-[#13487E]"
                 autoFocus
               />
@@ -180,7 +197,7 @@ export const StoreNavbar: React.FC<StoreNavbarProps> = ({
                   : 'text-neutral-300 hover:bg-neutral-900'
               }`}
             >
-              All Drops
+              {t('all_drops')}
             </button>
             {activeCategories.map((category) => (
               <button

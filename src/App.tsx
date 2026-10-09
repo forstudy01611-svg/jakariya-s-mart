@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { StorefrontView } from './components/storefront/StorefrontView';
 import { CheckoutView } from './components/storefront/CheckoutView';
 import { AdminLayout } from './components/admin/AdminLayout';
@@ -254,7 +255,9 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <StoreProvider>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </StoreProvider>
   );
 }
