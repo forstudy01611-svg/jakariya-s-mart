@@ -38,7 +38,7 @@ const AppContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>(resolveCurrentPath);
   const [showLoader, setShowLoader] = useState(true);
 
-  // Initial loader timing
+  // Initial loader timing - 1.5s unique brand reveal
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLoader(false);
