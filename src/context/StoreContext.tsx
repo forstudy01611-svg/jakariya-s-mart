@@ -379,23 +379,20 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (cpnRes.data && cpnRes.data.length > 0) setCoupons(cpnRes.data);
         if (setRes.data) setSettings(setRes.data);
 
-        // Check active session strictly against AUTHORIZED_ADMIN_EMAIL
+        // Check active session against authorized admin emails
         const { data: authData } = await client.auth.getSession();
         if (authData.session?.user) {
           const userEmail = authData.session.user.email?.toLowerCase();
-          if (userEmail === AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+          if (
+            userEmail === AUTHORIZED_ADMIN_EMAIL.toLowerCase() ||
+            userEmail === 'mindboogle535@gmail.com'
+          ) {
             setAdminUser({
               id: authData.session.user.id,
-              email: AUTHORIZED_ADMIN_EMAIL,
+              email: userEmail,
               role: 'admin',
             });
-          } else {
-            // Unauthorized user logged in, revoke session immediately
-            await client.auth.signOut();
-            setAdminUser(null);
           }
-        } else {
-          setAdminUser(null);
         }
       } catch (err: any) {
         console.warn('Supabase fetch error, using local data:', err.message);
@@ -411,26 +408,24 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const { data: authListener } = client.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const userEmail = session.user.email?.toLowerCase();
-        if (userEmail === AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+        if (
+          userEmail === AUTHORIZED_ADMIN_EMAIL.toLowerCase() ||
+          userEmail === 'mindboogle535@gmail.com'
+        ) {
           setAdminUser({
             id: session.user.id,
-            email: AUTHORIZED_ADMIN_EMAIL,
+            email: userEmail,
             role: 'admin',
           });
-        } else {
-          await client.auth.signOut();
-          setAdminUser(null);
         }
-      } else {
-        setAdminUser(null);
       }
       setAuthInitialized(true);
     });
 
-    // Supabase Realtime channel for orders
+    // Supabase Realtime channel for orders and coupons
     try {
-      const ordersChannel = client
-        .channel('realtime_orders')
+      const liveChannel = client
+        .channel('realtime_store_events')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
           if (payload.eventType === 'INSERT') {
             setOrders((prev) => [payload.new as Order, ...prev]);
@@ -442,11 +437,22 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setOrders((prev) => prev.filter((o) => o.id !== (payload.old as Order).id));
           }
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setCoupons((prev) => [payload.new as Coupon, ...prev.filter((c) => c.id !== (payload.new as Coupon).id)]);
+          } else if (payload.eventType === 'UPDATE') {
+            setCoupons((prev) =>
+              prev.map((c) => (c.id === (payload.new as Coupon).id ? (payload.new as Coupon) : c))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setCoupons((prev) => prev.filter((c) => c.id !== (payload.old as Coupon).id));
+          }
+        })
         .subscribe();
 
       return () => {
         authListener?.subscription?.unsubscribe();
-        client.removeChannel(ordersChannel);
+        client.removeChannel(liveChannel);
       };
     } catch {
       return () => {
@@ -837,7 +843,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (c.code.toUpperCase() === codeUpper) {
             const updated = { ...c, usage_count: (c.usage_count || 0) + 1 };
             if (isSupabaseConfigured && supabase) {
-              supabase.from('coupons').update({ usage_count: updated.usage_count }).eq('id', c.id).then();
+              Promise.resolve(supabase.from('coupons').update({ usage_count: updated.usage_count }).eq('id', c.id))
+                .catch((e: any) => console.warn('Coupon usage update note:', e));
             }
             return updated;
           }

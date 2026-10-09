@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     delivery_instructions TEXT,
     items JSONB NOT NULL DEFAULT '[]'::jsonb,
     subtotal NUMERIC NOT NULL,
+    coupon_code TEXT,
+    coupon_discount NUMERIC,
     delivery_charge NUMERIC NOT NULL,
     total NUMERIC NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'cash_on_delivery',
@@ -69,6 +71,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
 );
 
 -- Safe migrations for existing orders table
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_discount NUMERIC;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS division TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS district TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS upazila TEXT;
@@ -150,6 +154,46 @@ CREATE TABLE IF NOT EXISTS public.admin_profiles (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. Coupons Table
+CREATE TABLE IF NOT EXISTS public.coupons (
+    id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    discount_type TEXT NOT NULL DEFAULT 'percentage',
+    discount_value NUMERIC NOT NULL,
+    applies_to TEXT NOT NULL DEFAULT 'all',
+    product_ids JSONB DEFAULT '[]'::jsonb,
+    min_order_amount NUMERIC,
+    max_discount_amount NUMERIC,
+    start_date TIMESTAMPTZ,
+    end_date TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE,
+    usage_count INTEGER DEFAULT 0,
+    usage_limit INTEGER,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Migrations for existing coupons table
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS min_order_amount NUMERIC;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS max_discount_amount NUMERIC;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS usage_limit INTEGER;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS applies_to TEXT DEFAULT 'all';
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS product_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description TEXT;
+
+-- Seed default coupons if not exists
+INSERT INTO public.coupons (id, code, discount_type, discount_value, applies_to, min_order_amount, is_active, usage_count, description)
+VALUES 
+  ('cpn-1', 'JM10', 'percentage', 10, 'all', 500, true, 5, '10% discount on all store products for orders above ৳500'),
+  ('cpn-2', 'CYBER20', 'percentage', 20, 'all', 1000, true, 2, '20% special discount on orders above ৳1000'),
+  ('cpn-3', 'WELCOME100', 'fixed', 100, 'all', 1200, true, 8, 'Flat ৳100 discount on your order above ৳1200')
+ON CONFLICT (code) DO NOTHING;
+
 -- Insert Default Singleton Settings row if not exists
 INSERT INTO public.settings (id, store_name, tagline, delivery_charge, delivery_charge_outside)
 VALUES (1, 'Jakariya''s Mart', 'Modern Streetwear & Anime Apparel - Bangladesh', 80, 120)
@@ -167,6 +211,7 @@ ALTER TABLE public.delivery_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.banners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
 -- Categories Policies
 DROP POLICY IF EXISTS "Allow public read categories" ON public.categories;
@@ -214,7 +259,18 @@ DROP POLICY IF EXISTS "Allow all on admin_profiles" ON public.admin_profiles;
 CREATE POLICY "Allow public read admin_profiles" ON public.admin_profiles FOR SELECT USING (true);
 CREATE POLICY "Allow all on admin_profiles" ON public.admin_profiles FOR ALL USING (true) WITH CHECK (true);
 
--- Realtime Configuration for Live Orders & Payments
+-- Coupons Policies (Allow public to view coupons, update usage on purchase, and full manage)
+DROP POLICY IF EXISTS "Allow public read coupons" ON public.coupons;
+DROP POLICY IF EXISTS "Allow public update coupons usage" ON public.coupons;
+DROP POLICY IF EXISTS "Allow all on coupons" ON public.coupons;
+DROP POLICY IF EXISTS "Public can view active coupons" ON public.coupons;
+DROP POLICY IF EXISTS "Admin full access on coupons" ON public.coupons;
+
+CREATE POLICY "Allow public read coupons" ON public.coupons FOR SELECT USING (true);
+CREATE POLICY "Allow public update coupons usage" ON public.coupons FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on coupons" ON public.coupons FOR ALL USING (true) WITH CHECK (true);
+
+-- Realtime Configuration for Live Orders, Payments & Coupons
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -229,5 +285,12 @@ BEGIN
     WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'delivery_payments'
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.delivery_payments;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'coupons'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.coupons;
   END IF;
 END $$;
