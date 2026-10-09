@@ -18,7 +18,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onBuyNow,
 }) => {
   const { categories, settings, addToCart, cart } = useStore();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [added, setAdded] = React.useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -59,12 +59,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => onNavigate(`/product/${product.id}`)}
       className="group relative bg-neutral-900/60 rounded-xl border border-neutral-800 hover:border-neutral-700 overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-black/50"
     >
-      {/* Image Container - Clicking expands image in large lightbox */}
-      <div 
-        onClick={handleImageClick}
-        className="relative aspect-square w-full bg-neutral-950 overflow-hidden group/img cursor-zoom-in"
-        title={t('click_to_zoom')}
-      >
+      {/* Image Container - Clicking image or card body navigates to product page */}
+      <div className="relative aspect-square w-full bg-neutral-950 overflow-hidden group/img">
         <img
           src={product.images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
           alt={product.name}
@@ -72,14 +68,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           loading="lazy"
         />
 
-        {/* Zoom Hint Icon in Corner */}
+        {/* Click to Expand Button - ONLY clicking this button opens large lightbox */}
         <button
           onClick={handleImageClick}
-          className="absolute bottom-2.5 right-2.5 z-10 p-1.5 sm:p-2 rounded-lg bg-black/70 hover:bg-[#13487E] text-white border border-neutral-700/80 backdrop-blur-xs transition-all shadow-md group-hover/img:scale-110 active:scale-95"
+          className="absolute bottom-2.5 right-2.5 z-10 px-2 py-1.5 rounded-lg bg-black/85 hover:bg-[#13487E] text-white border border-neutral-700/80 backdrop-blur-xs transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-1.5 text-[10px] font-bold"
           title={t('click_to_zoom')}
-          aria-label="Expand image"
+          aria-label="Click to expand"
         >
-          <Maximize2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <Maximize2 className="w-3.5 h-3.5 text-blue-400 group-hover:text-white" />
+          <span className="text-[10px]">{language === 'bn' ? 'বড় ছবি' : 'Expand'}</span>
         </button>
 
         {/* Badges Overlay */}
