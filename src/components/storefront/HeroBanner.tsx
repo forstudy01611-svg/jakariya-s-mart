@@ -69,12 +69,13 @@ export const HeroBanner: React.FC = () => {
           }`}
         >
           {/* Banner Image - Clean 3:1 presentation without text or headline overlays */}
-          <div className="relative w-full aspect-[3/1] overflow-hidden">
+          <div className="relative w-full aspect-[3/1] overflow-hidden bg-neutral-900">
             <img
               src={currentBanner.image_url}
               alt="Store Promotion Banner"
-              className="w-full h-full object-cover object-center transition-all duration-700 ease-out select-none"
+              className="w-full h-full object-cover object-center transition-opacity duration-500 ease-out select-none"
               loading="eager"
+              decoding="async"
             />
           </div>
 

@@ -68,7 +68,7 @@ export const AdminBanners: React.FC = () => {
 
     setIsUploading(true);
     try {
-      const url = await uploadImage(file);
+      const url = await uploadImage(file, { isBanner: true, maxDimension: 3840, quality: 0.92 });
       setFormData((prev) => ({ ...prev, image_url: url }));
     } catch {
       setErrorMsg('Failed to upload image.');
@@ -257,21 +257,21 @@ export const AdminBanners: React.FC = () => {
                     Banner Image <span className="text-[#13487E]">*</span>
                   </label>
                   <span className="text-[11px] text-[#13487E] font-medium">
-                    Recommended: 1920×640px or 1200×400px (3:1 Ratio)
+                    4K / Ultra-HD Ready: 3840×1280px or 1920×640px (3:1 Ratio)
                   </span>
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     required
-                    placeholder="https://... or upload image file"
+                    placeholder="https://... direct image URL or upload 4K file"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#13487E]"
                   />
                   <label className="px-3.5 py-2 rounded-xl bg-[#13487E]/20 hover:bg-[#13487E]/30 border border-[#13487E]/50 text-xs font-bold text-[#13487E] cursor-pointer flex items-center gap-1.5 transition-colors">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
+                    <span>{isUploading ? 'Uploading...' : 'Upload 4K'}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -281,6 +281,9 @@ export const AdminBanners: React.FC = () => {
                     />
                   </label>
                 </div>
+                <p className="text-[11px] text-neutral-400">
+                  Tip: For pixel-perfect 4K sharpness, use a 3:1 aspect ratio banner (e.g. 3840×1280). If your 4K image is 16:9 (3840×2160), it will be centered and cropped to 3:1.
+                </p>
 
                 {formData.image_url && (
                   <div className="relative aspect-[21/9] max-h-40 rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950">

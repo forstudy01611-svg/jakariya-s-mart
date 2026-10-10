@@ -138,7 +138,10 @@ interface StoreContextType {
   updateSettings: (updates: Partial<StoreSettings>) => Promise<void>;
 
   // Media upload
-  uploadImage: (file: File) => Promise<string>;
+  uploadImage: (
+    file: File,
+    options?: { maxDimension?: number; quality?: number; isBanner?: boolean }
+  ) => Promise<string>;
 
   // Auth
   loginAdmin: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -1442,11 +1445,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Upload image: uses Supabase Storage if configured, or converts to responsive base64
-  const uploadImage = async (file: File): Promise<string> => {
+  // Upload image: uses Supabase Storage if configured, or converts to high-fidelity base64
+  const uploadImage = async (
+    file: File,
+    options?: { maxDimension?: number; quality?: number; isBanner?: boolean }
+  ): Promise<string> => {
     if (isSupabaseConfigured && supabase) {
       try {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
         const filePath = `uploads/${fileName}`;
 
@@ -1465,8 +1471,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     }
 
-    // High quality, lightweight compressed data URL fallback (reduces 5MB+ photos to ~40KB-70KB)
-    return await compressImageFile(file, 900, 0.75);
+    // High quality data URL fallback:
+    // If it's a banner, preserve crisp 4K resolution (up to 3840px) with 92% quality instead of downscaling to 900px
+    const maxDim = options?.maxDimension ?? (options?.isBanner ? 3840 : 1600);
+    const quality = options?.quality ?? (options?.isBanner ? 0.92 : 0.85);
+    return await compressImageFile(file, maxDim, quality);
   };
 
   // Admin Auth - Strictly restricted to authorized username: junaid&jakariya and password: jakaria.jaku4825
