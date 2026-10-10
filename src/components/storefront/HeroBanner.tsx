@@ -1,99 +1,134 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export const HeroBanner: React.FC = () => {
   const { banners } = useStore();
+  const { isDark } = useTheme();
+
   const activeBanners = banners
     .filter((b) => b.is_active)
     .sort((a, b) => a.display_order - b.display_order);
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    if (activeBanners.length <= 1) return;
+    if (activeBanners.length <= 1 || isPaused) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % activeBanners.length);
-    }, 6000);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [activeBanners.length]);
+  }, [activeBanners.length, isPaused]);
 
   if (activeBanners.length === 0) return null;
 
   const currentBanner = activeBanners[currentIndex] || activeBanners[0];
 
-  const handleNext = () => {
+  const handleNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev + 1) % activeBanners.length);
   };
 
-  const handlePrev = () => {
+  const handlePrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev - 1 + activeBanners.length) % activeBanners.length);
   };
 
+  const handleBannerClick = () => {
+    if (currentBanner.button_url) {
+      if (currentBanner.button_url.startsWith('#')) {
+        const target = document.querySelector(currentBanner.button_url);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+      }
+      if (currentBanner.button_url.startsWith('http')) {
+        window.location.href = currentBanner.button_url;
+      } else {
+        window.location.hash = currentBanner.button_url;
+      }
+    }
+  };
+
   return (
-    <div className="relative w-full overflow-hidden bg-neutral-950 border-b border-neutral-800">
-      <div className="relative max-w-7xl mx-auto min-h-[380px] sm:min-h-[460px] lg:min-h-[520px] flex items-center">
-        {/* Background Image with Gradient Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={currentBanner.image_url}
-            alt={currentBanner.title}
-            className="w-full h-full object-cover object-center brightness-50 contrast-125 transition-all duration-700"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-transparent to-transparent" />
+    <div className={`w-full ${isDark ? 'bg-[#0a0a0c]' : 'bg-slate-50'} py-2 sm:py-4 transition-colors duration-300`}>
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+        <div
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onClick={handleBannerClick}
+          className={`relative w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-sm transition-all duration-300 ${
+            currentBanner.button_url ? 'cursor-pointer' : ''
+          } ${
+            isDark
+              ? 'bg-neutral-900 border border-neutral-800/80 shadow-black/40'
+              : 'bg-white border border-slate-200/90 shadow-slate-200/50'
+          }`}
+        >
+          {/* Banner Image - Clean 3:1 presentation without text or headline overlays */}
+          <div className="relative w-full aspect-[3/1] overflow-hidden">
+            <img
+              src={currentBanner.image_url}
+              alt="Store Promotion Banner"
+              className="w-full h-full object-cover object-center transition-all duration-700 ease-out select-none"
+              loading="eager"
+            />
+          </div>
+
+          {/* Slider Arrows (Only if multiple banners exist) */}
+          {activeBanners.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={handlePrev}
+                className={`absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all z-10 backdrop-blur-md ${
+                  isDark
+                    ? 'bg-black/50 text-white hover:bg-black/80 border border-white/10'
+                    : 'bg-white/80 text-slate-800 hover:bg-white border border-slate-300/80 shadow-sm'
+                }`}
+                aria-label="Previous Banner"
+              >
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNext}
+                className={`absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all z-10 backdrop-blur-md ${
+                  isDark
+                    ? 'bg-black/50 text-white hover:bg-black/80 border border-white/10'
+                    : 'bg-white/80 text-slate-800 hover:bg-white border border-slate-300/80 shadow-sm'
+                }`}
+                aria-label="Next Banner"
+              >
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+              </button>
+
+              {/* Indicator Dots */}
+              <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-10 px-2 py-1 rounded-full backdrop-blur-md bg-black/30">
+                {activeBanners.map((b, idx) => (
+                  <button
+                    key={b.id || idx}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentIndex(idx);
+                    }}
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                      currentIndex === idx
+                        ? 'w-6 sm:w-8 bg-white'
+                        : 'w-1.5 sm:w-2 bg-white/50 hover:bg-white/80'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Content */}
-        <div className="relative z-10 max-w-2xl px-6 py-16 sm:px-12 sm:py-24 space-y-4">
-          <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-[#13487E]">
-            <span className="w-2 h-2 rounded-full bg-[#13487E] animate-ping" />
-            <span>Featured Release</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight uppercase font-['Space_Grotesk'] leading-[1.05]">
-            {currentBanner.title}
-          </h1>
-
-          <p className="text-neutral-300 text-sm sm:text-base max-w-lg leading-relaxed">
-            {currentBanner.subtitle}
-          </p>
-
-          <div className="pt-2 flex items-center gap-4">
-            <a
-              href={currentBanner.button_url || '#catalog'}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#13487E] hover:bg-[#0d3a66] text-white font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg shadow-[#13487E]/25 transform hover:-translate-y-0.5"
-            >
-              <span>{currentBanner.button_text || 'Shop Now'}</span>
-              <ArrowUpRight className="w-4 h-4 text-black stroke-[2.5]" />
-            </a>
-          </div>
-        </div>
-
-        {/* Slider Controls */}
-        {activeBanners.length > 1 && (
-          <div className="absolute bottom-6 right-6 z-20 flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              className="w-10 h-10 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-700 flex items-center justify-center text-white hover:text-[#13487E] hover:border-[#13487E] transition-colors"
-              aria-label="Previous Slide"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-neutral-900/80 backdrop-blur rounded-lg border border-neutral-700 text-xs font-mono text-neutral-300">
-              <span className="text-[#13487E] font-bold">{currentIndex + 1}</span>
-              <span>/</span>
-              <span>{activeBanners.length}</span>
-            </div>
-            <button
-              onClick={handleNext}
-              className="w-10 h-10 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-700 flex items-center justify-center text-white hover:text-[#13487E] hover:border-[#13487E] transition-colors"
-              aria-label="Next Slide"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

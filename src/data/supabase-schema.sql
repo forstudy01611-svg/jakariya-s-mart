@@ -4,7 +4,7 @@
 -- https://supabase.com/dashboard/project/_/sql/new
 -- ==============================================================================
 
--- 1. Categories Table
+-- 1. Categories Table (Supports Hierarchical Subcategories)
 CREATE TABLE IF NOT EXISTS public.categories (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -13,10 +13,14 @@ CREATE TABLE IF NOT EXISTS public.categories (
     image_url TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     display_order INTEGER DEFAULT 1,
+    parent_id TEXT REFERENCES public.categories(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Products Table (Includes variants JSONB)
+-- Add parent_id column if upgrading existing table
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS parent_id TEXT REFERENCES public.categories(id) ON DELETE SET NULL;
+
+-- 2. Products Table (Includes variants JSONB and subcategory)
 CREATE TABLE IF NOT EXISTS public.products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -24,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     price NUMERIC NOT NULL,
     discount_price NUMERIC,
     category_id TEXT REFERENCES public.categories(id) ON DELETE SET NULL,
+    subcategory_id TEXT REFERENCES public.categories(id) ON DELETE SET NULL,
     stock INTEGER DEFAULT 0,
     sku TEXT,
     images JSONB DEFAULT '[]'::jsonb,
@@ -34,7 +39,8 @@ CREATE TABLE IF NOT EXISTS public.products (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add variants column if upgrading existing table
+-- Add columns if upgrading existing table
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS subcategory_id TEXT REFERENCES public.categories(id) ON DELETE SET NULL;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS variants JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS sku TEXT;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS discount_price NUMERIC;
@@ -109,6 +115,8 @@ CREATE TABLE IF NOT EXISTS public.banners (
     is_active BOOLEAN DEFAULT TRUE,
     display_order INTEGER DEFAULT 1
 );
+
+ALTER TABLE public.banners ALTER COLUMN title DROP NOT NULL;
 
 -- 6. Store Settings Table (Includes bKash, Nagad, Policies, Site Views)
 CREATE TABLE IF NOT EXISTS public.settings (

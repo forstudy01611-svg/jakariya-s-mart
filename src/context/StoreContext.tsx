@@ -208,7 +208,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+      if (!saved) return INITIAL_CATEGORIES;
+      const parsed: Category[] = JSON.parse(saved);
+      const hasAnySub = parsed.some((c) => Boolean(c.parent_id));
+      if (!hasAnySub) {
+        const defaultSubs = INITIAL_CATEGORIES.filter((c) => Boolean(c.parent_id));
+        return [...parsed, ...defaultSubs];
+      }
+      return parsed;
     } catch {
       return INITIAL_CATEGORIES;
     }
@@ -1292,34 +1299,62 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     let movedCount = 0;
 
     // Move any products in this category to another category if provided
-    if (reassignToCategoryId) {
-      setProducts((prev) =>
-        prev.map((p) => {
-          if (p.category_id === id) {
-            movedCount++;
-            return { ...p, category_id: reassignToCategoryId, updated_at: new Date().toISOString() };
-          }
-          return p;
-        })
-      );
+    setProducts((prev) =>
+      prev.map((p) => {
+        let updated = { ...p };
+        let changed = false;
 
-      if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase
-            .from('products')
-            .update({ category_id: reassignToCategoryId })
-            .eq('category_id', id);
-        } catch (err) {
-          console.warn('Could not reassign products in Supabase:', err);
+        if (p.category_id === id) {
+          if (reassignToCategoryId) {
+            updated.category_id = reassignToCategoryId;
+            movedCount++;
+            changed = true;
+          }
         }
+
+        if (p.subcategory_id === id) {
+          updated.subcategory_id = null;
+          changed = true;
+        }
+
+        return changed ? { ...updated, updated_at: new Date().toISOString() } : p;
+      })
+    );
+
+    if (reassignToCategoryId && isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from('products')
+          .update({ category_id: reassignToCategoryId })
+          .eq('category_id', id);
+      } catch (err) {
+        console.warn('Could not reassign products in Supabase:', err);
       }
     }
 
-    // Delete category
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    // Detach or reassign child subcategories whose parent was this category
+    setCategories((prev) =>
+      prev
+        .filter((c) => c.id !== id)
+        .map((c) => {
+          if (c.parent_id === id) {
+            return {
+              ...c,
+              parent_id: reassignToCategoryId || null,
+            };
+          }
+          return c;
+        })
+    );
 
     if (isSupabaseConfigured && supabase) {
       try {
+        // Update any subcategories in Supabase
+        await supabase
+          .from('categories')
+          .update({ parent_id: reassignToCategoryId || null })
+          .eq('parent_id', id);
+
         await supabase.from('categories').delete().eq('id', id);
       } catch (err) {
         console.warn('Could not delete category in Supabase:', err);

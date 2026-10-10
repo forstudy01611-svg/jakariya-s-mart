@@ -33,6 +33,7 @@ export interface Category {
   image_url: string;
   is_active: boolean;
   display_order: number;
+  parent_id?: string | null; // For hierarchical subcategories
   created_at?: string;
 }
 
@@ -49,6 +50,7 @@ export interface Product {
   price: number;
   discount_price?: number | null;
   category_id: string;
+  subcategory_id?: string | null; // Optional subcategory ID
   stock: number;
   sku?: string;
   images: string[];

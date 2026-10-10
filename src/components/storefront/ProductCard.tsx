@@ -3,6 +3,7 @@ import { Plus, Check, Maximize2 } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { formatBDT } from '../../utils/bangladesh';
 import { ImageLightboxModal } from './ImageLightboxModal';
 
@@ -17,14 +18,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onNavigate,
   onBuyNow,
 }) => {
-  const { categories, settings, addToCart, cart } = useStore();
+  const { categories, addToCart, cart } = useStore();
   const { t, language } = useLanguage();
+  const { isDark } = useTheme();
   const [added, setAdded] = React.useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const category = categories.find((c) => c.id === product.category_id);
   const cartItem = cart.find((i) => i.product.id === product.id);
-  const cartQuantity = cartItem?.quantity || 0;
   const isOutOfStock = product.stock <= 0;
 
   const handleImageClick = (e: React.MouseEvent) => {
@@ -57,10 +58,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div
       onClick={() => onNavigate(`/product/${product.id}`)}
-      className="group relative bg-neutral-900/60 rounded-xl border border-neutral-800 hover:border-neutral-700 overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-black/50"
+      className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between ${
+        isDark
+          ? 'bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50'
+          : 'bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xl hover:shadow-slate-200/60 shadow-xs'
+      }`}
     >
-      {/* Image Container - Clicking image or card body navigates to product page */}
-      <div className="relative aspect-square w-full bg-neutral-950 overflow-hidden group/img">
+      {/* Image Container */}
+      <div className={`relative aspect-square w-full overflow-hidden group/img ${isDark ? 'bg-neutral-950' : 'bg-slate-100'}`}>
         <img
           src={product.images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
           alt={product.name}
@@ -82,12 +87,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Badges Overlay */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 items-start pointer-events-none">
           {discountPercent && (
-            <span className="bg-[#13487E] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider shadow">
+            <span className="bg-[#13487E] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider shadow">
               {t('save')} {discountPercent}%
             </span>
           )}
           {product.is_featured && (
-            <span className="bg-neutral-900/90 backdrop-blur border border-neutral-700 text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded tracking-wider">
+            <span className="bg-black/80 backdrop-blur border border-white/20 text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-md tracking-wider">
               {t('hot_drop')}
             </span>
           )}
@@ -113,28 +118,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
         <div>
           {category && (
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1">
+            <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
               {category.name}
             </p>
           )}
 
-          <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-[#13487E] transition-colors line-clamp-1">
+          <h3 className={`text-sm sm:text-base font-bold group-hover:text-[#13487E] transition-colors line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {product.name}
           </h3>
 
-          <p className="text-xs text-neutral-400 line-clamp-2 mt-1 leading-relaxed">
+          <p className={`text-xs line-clamp-2 mt-1 leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
             {product.description}
           </p>
         </div>
 
         {/* Price & Actions (Add to Bag & Buy Now) */}
-        <div className="space-y-3 pt-2 border-t border-neutral-800/80">
+        <div className={`space-y-3 pt-3 border-t ${isDark ? 'border-neutral-850' : 'border-slate-100'}`}>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-black text-white font-['Space_Grotesk']">
+            <span className={`text-lg font-black font-['Space_Grotesk'] ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {formatBDT(displayPrice)}
             </span>
             {product.discount_price && product.discount_price < product.price && (
-              <span className="text-xs text-neutral-500 line-through">
+              <span className={`text-xs line-through ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
                 {formatBDT(product.price)}
               </span>
             )}
@@ -144,12 +149,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <button
               onClick={handleQuickAdd}
               disabled={isOutOfStock}
-              className={`py-2 px-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider border ${
+              className={`py-2 px-2 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider border cursor-pointer ${
                 isOutOfStock
-                  ? 'bg-neutral-800 text-neutral-600 border-neutral-800 cursor-not-allowed'
+                  ? isDark
+                    ? 'bg-neutral-800 text-neutral-600 border-neutral-800 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                   : added
-                  ? 'bg-emerald-500 text-black border-emerald-500'
-                  : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
+                  ? 'bg-emerald-500 text-white border-emerald-500'
+                  : isDark
+                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
               }`}
               title={isOutOfStock ? t('sold_out') : t('add')}
             >
@@ -171,10 +180,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 onBuyNow(product, 1);
               }}
               disabled={isOutOfStock}
-              className={`py-2 px-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider ${
+              className={`py-2 px-2 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wider cursor-pointer ${
                 isOutOfStock
-                  ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
-                  : 'bg-[#13487E] hover:bg-[#0d3a66] text-white shadow-lg shadow-[#13487E]/20'
+                  ? isDark
+                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-[#13487E] hover:bg-[#0d3a66] text-white shadow-md shadow-[#13487E]/20'
               }`}
             >
               <span>{t('buy_now')}</span>

@@ -29,6 +29,7 @@ import {
   calculateDeliveryCharge,
   isDhakaDistrict,
 } from '../../utils/bangladesh';
+import { useTheme } from '../../context/ThemeContext';
 import { StoreNavbar } from './StoreNavbar';
 import { StoreFooter } from './StoreFooter';
 import { InvoiceDocument } from '../common/InvoiceDocument';
@@ -90,6 +91,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
     removeAppliedCoupon,
     calculateDiscountForCoupon,
   } = useStore();
+  const { isDark } = useTheme();
 
   // Customer Form State (5 fields: 4 required, 1 optional)
   const [fullName, setFullName] = useState('');
@@ -404,7 +406,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070709] text-neutral-100 flex flex-col font-sans">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${isDark ? 'bg-[#070709] text-neutral-100' : 'bg-slate-50 text-slate-900'}`}>
       <StoreNavbar
         onNavigate={onNavigate}
         onOpenCart={() => {}}
@@ -418,7 +420,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
         {/* Back Button */}
         <button
           onClick={() => onNavigate('/')}
-          className="inline-flex items-center gap-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800"
+          className={`inline-flex items-center gap-2 text-xs font-bold transition-colors px-3 py-2 rounded-xl border cursor-pointer ${
+            isDark
+              ? 'text-neutral-400 hover:text-white bg-neutral-900 border-neutral-800'
+              : 'text-slate-600 hover:text-slate-900 bg-white border-slate-200 shadow-2xs'
+          }`}
         >
           <ArrowLeft className="w-4 h-4 text-[#13487E]" />
           <span>Back to Store (ফিরে যান)</span>
@@ -428,7 +434,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
           /* Order Confirmation Success View with Full Visible Invoice */
           <div className="space-y-6">
             {/* Success Notification Banner */}
-            <div className="bg-[#0d0d12] border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-4 text-center shadow-2xl">
+            <div className={`rounded-2xl p-6 sm:p-8 space-y-4 text-center border shadow-xl ${
+              isDark
+                ? 'bg-[#0d0d12] border-neutral-800'
+                : 'bg-white border-slate-200 shadow-slate-200/50'
+            }`}>
               <div className="w-16 h-16 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-950/50">
                 <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
               </div>
@@ -437,10 +447,10 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                 <span className="text-[11px] font-mono uppercase tracking-widest text-[#13487E] bg-[#13487E]/10 px-3 py-1 rounded-full font-bold">
                   Order Successfully Placed (#{createdOrder.id})
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-black text-white font-['Space_Grotesk'] tracking-tight">
+                <h3 className={`text-2xl sm:text-3xl font-black font-['Space_Grotesk'] tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   ধন্যবাদ, {createdOrder.customer_name}!
                 </h3>
-                <p className="text-xs sm:text-sm text-neutral-300 max-w-lg mx-auto leading-relaxed">
+                <p className={`text-xs sm:text-sm max-w-lg mx-auto leading-relaxed ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
                   আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। নিচে আপনার অফিসিয়াল ইনভয়েসটি দেওয়া হলো। আপনি চাইলে এটি সংরক্ষণ বা ডাউনলোড করতে পারবেন।
                 </p>
               </div>
@@ -470,11 +480,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
             {/* VISIBLE OFFICIAL CUSTOMER INVOICE DOCUMENT */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                <h2 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                   <FileText className="w-4 h-4 text-[#13487E]" />
                   <span>Customer Order Invoice (গ্রাহক ইনভয়েস রশিদ)</span>
                 </h2>
-                <span className="text-[10px] text-neutral-500 font-mono">Invoice Auto-Generated</span>
+                <span className={`text-[10px] font-mono ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>Invoice Auto-Generated</span>
               </div>
 
               {/* Render Invoice Directly On Screen */}
@@ -487,30 +497,38 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
           </div>
         ) : (
           /* Standalone Checkout Page Content */
-          <div className="bg-[#0d0d12] border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl">
-            <div className="border-b border-neutral-800 pb-4">
+          <div className={`rounded-2xl p-6 sm:p-8 space-y-6 border shadow-xl ${
+            isDark ? 'bg-[#0d0d12] border-neutral-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className={`border-b pb-4 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#13487E]">
                   {buyNowItems ? 'Direct Buy Now Checkout' : 'Express Checkout'}
                 </span>
-                <span className="text-[10px] bg-neutral-900 border border-neutral-800 text-neutral-300 px-2 py-0.5 rounded font-mono font-bold">
+                <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+                  isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-slate-100 border-slate-200 text-slate-700'
+                }`}>
                   Cash on Delivery (COD)
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white font-['Space_Grotesk'] mt-1">
+              <h1 className={`text-2xl sm:text-3xl font-black uppercase tracking-tight font-['Space_Grotesk'] mt-1 ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 Jakariya's Mart Checkout
               </h1>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-6">
               {/* Order Summary Box */}
-              <div className="p-4 sm:p-5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3">
-                <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+              <div className={`p-4 sm:p-5 rounded-xl border space-y-3 ${
+                isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className={`flex items-center justify-between border-b pb-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
                     <ShoppingBag className="w-4 h-4 text-[#13487E]" />
                     <span>Order Summary (অর্ডার সারসংক্ষেপ)</span>
                   </span>
-                  <span className="text-[11px] font-mono text-neutral-400">
+                  <span className={`text-[11px] font-mono ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                     {activeItems.length} item(s)
                   </span>
                 </div>
@@ -520,7 +538,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                     const itemPrice = item.product.discount_price ?? item.product.price;
                     return (
                       <div key={idx} className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 border border-neutral-800">
+                        <div className={`w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'}`}>
                           <img
                             src={item.product.images[0] || ''}
                             alt={item.product.name}
@@ -528,21 +546,21 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-xs sm:text-sm font-bold text-white truncate">{item.product.name}</h4>
+                          <h4 className={`text-xs sm:text-sm font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.product.name}</h4>
                           {item.selected_variants && Object.entries(item.selected_variants).length > 0 && (
                             <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
                               {Object.entries(item.selected_variants).map(([k, v]) => (
-                                <span key={k} className="text-[10px] text-neutral-400">
-                                  {k}: <span className="text-neutral-200">{v}</span>
+                                <span key={k} className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                                  {k}: <span className={isDark ? 'text-neutral-200' : 'text-slate-800 font-semibold'}>{v}</span>
                                 </span>
                               ))}
                             </div>
                           )}
-                          <div className="text-[10px] text-neutral-500 font-mono mt-1">
+                          <div className={`text-[10px] font-mono mt-1 ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
                             {item.quantity} × {formatBDT(itemPrice)}
                           </div>
                         </div>
-                        <div className="text-right font-mono text-xs sm:text-sm font-bold text-white">
+                        <div className={`text-right font-mono text-xs sm:text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                           {formatBDT(itemPrice * item.quantity)}
                         </div>
                       </div>
@@ -551,7 +569,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Coupon Code Box */}
-                <div className="pt-2 border-t border-neutral-800/80 space-y-2">
+                <div className={`pt-2 border-t space-y-2 ${isDark ? 'border-neutral-800/80' : 'border-slate-200'}`}>
                   {appliedCoupon && couponDiscount > 0 ? (
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs">
                       <div className="flex items-center gap-2">
@@ -568,7 +586,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={handleRemoveCoupon}
-                        className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-neutral-800/60 transition-colors"
+                        className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-neutral-800/60 transition-colors cursor-pointer"
                         title="Remove coupon"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -578,13 +596,17 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                     <div className="space-y-1.5">
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <Tag className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <Tag className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type="text"
                             placeholder="Coupon code (e.g. JM10)"
                             value={couponInput}
                             onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                            className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono font-bold text-white placeholder-neutral-500 focus:outline-none focus:border-[#13487E]"
+                            className={`w-full pl-9 pr-3 py-2 border rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-[#13487E] ${
+                              isDark
+                                ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500'
+                                : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
+                            }`}
                           />
                         </div>
                         <button
@@ -616,14 +638,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-neutral-800 space-y-2 text-xs sm:text-sm">
-                  <div className="flex justify-between text-neutral-400">
+                <div className={`pt-3 border-t space-y-2 text-xs sm:text-sm ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <div className={`flex justify-between ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
                     <span>Subtotal (পণ্যের মূল্য):</span>
-                    <span className="font-mono font-bold text-white">{formatBDT(activeSubtotal)}</span>
+                    <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(activeSubtotal)}</span>
                   </div>
 
                   {couponDiscount > 0 && (
-                    <div className="flex justify-between text-emerald-400 font-bold">
+                    <div className="flex justify-between text-emerald-500 font-bold">
                       <span className="flex items-center gap-1">
                         <Tag className="w-3.5 h-3.5" />
                         <span>Coupon Discount ({appliedCoupon?.code}):</span>
@@ -632,25 +654,29 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                     </div>
                   )}
 
-                  <div className="flex justify-between text-neutral-400">
+                  <div className={`flex justify-between ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
                     <div className="flex items-center gap-1.5">
                       <span>Delivery Charge (ডেলিভারি চার্জ):</span>
-                      <span className="text-[10px] font-mono font-bold bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                        isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-slate-100 border-slate-200 text-slate-700'
+                      }`}>
                         {isDhaka ? 'Inside Dhaka' : 'Outside Dhaka'}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-emerald-400">{formatBDT(deliveryFee)}</span>
+                    <span className="font-mono font-bold text-emerald-500">{formatBDT(deliveryFee)}</span>
                   </div>
-                  <div className="flex justify-between text-base font-black text-white pt-2.5 border-t border-neutral-800">
+                  <div className={`flex justify-between text-base font-black pt-2.5 border-t ${
+                    isDark ? 'border-neutral-800 text-white' : 'border-slate-200 text-slate-900'
+                  }`}>
                     <span>Total Amount (সর্বমোট):</span>
-                    <span className="font-mono text-xl text-[#6ea8fe]">{formatBDT(grandTotal)}</span>
+                    <span className={`font-mono text-xl ${isDark ? 'text-[#6ea8fe]' : 'text-[#13487E]'}`}>{formatBDT(grandTotal)}</span>
                   </div>
                 </div>
               </div>
 
               {/* 5 Required Customer Information Fields */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-400 border-b border-neutral-800 pb-2">
+                <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider border-b pb-2 ${isDark ? 'text-neutral-400 border-neutral-800' : 'text-slate-600 border-slate-200'}`}>
                   <User className="w-4 h-4 text-[#13487E]" />
                   <span>Customer Information (গ্রাহকের তথ্য)</span>
                 </div>
@@ -658,7 +684,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* 1. Name */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-neutral-300">
+                    <label className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
                       1. Name (আপনার নাম) <span className="text-[#13487E]">*</span>
                     </label>
                     <input
@@ -667,17 +693,19 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       placeholder="e.g. Asif Mahmud"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all ${
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all ${
+                        isDark ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-slate-50 text-slate-900 placeholder-slate-400 focus:bg-white'
+                      } ${
                         popupError?.field === 'name'
                           ? 'border-red-500 ring-2 ring-red-500/20'
-                          : 'border-neutral-800 focus:border-[#13487E]'
+                          : isDark ? 'border-neutral-800 focus:border-[#13487E]' : 'border-slate-300 focus:border-[#13487E]'
                       }`}
                     />
                   </div>
 
                   {/* 2. Phone Number */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-neutral-300">
+                    <label className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
                       2. Phone Number (মোবাইল নম্বর) <span className="text-[#13487E]">*</span>
                     </label>
                     <div className="relative">
@@ -687,29 +715,33 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                         placeholder="01712345678"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 pl-10 text-sm font-mono text-white placeholder-neutral-600 focus:outline-none transition-all ${
+                        className={`w-full border rounded-xl px-4 py-3 pl-10 text-sm font-mono focus:outline-none transition-all ${
+                          isDark ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-slate-50 text-slate-900 placeholder-slate-400 focus:bg-white'
+                        } ${
                           popupError?.field === 'phone'
                             ? 'border-red-500 ring-2 ring-red-500/20'
-                            : 'border-neutral-800 focus:border-[#13487E]'
+                            : isDark ? 'border-neutral-800 focus:border-[#13487E]' : 'border-slate-300 focus:border-[#13487E]'
                         }`}
                       />
-                      <Phone className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3.5" />
+                      <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5" />
                     </div>
                   </div>
 
                   {/* 3. District */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-neutral-300">
+                    <label className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
                       3. District (জেলা) <span className="text-[#13487E]">*</span>
                     </label>
                     <select
                       ref={districtSelectRef}
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
-                      className={`w-full bg-neutral-950 border rounded-xl px-3.5 py-3 text-xs sm:text-sm text-white focus:outline-none transition-all ${
+                      className={`w-full border rounded-xl px-3.5 py-3 text-xs sm:text-sm focus:outline-none transition-all ${
+                        isDark ? 'bg-neutral-950 text-white border-neutral-800 focus:border-[#13487E]' : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-[#13487E]'
+                      } ${
                         popupError?.field === 'district'
                           ? 'border-red-500 ring-2 ring-red-500/20'
-                          : 'border-neutral-800 focus:border-[#13487E]'
+                          : ''
                       }`}
                     >
                       {ALL_BD_DISTRICTS.map((d) => (
@@ -722,7 +754,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
 
                   {/* 4. Full Delivery Address */}
                   <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-xs font-bold text-neutral-300">
+                    <label className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
                       4. Full Delivery Address (সম্পূর্ণ ঠিকানা) <span className="text-[#13487E]">*</span>
                     </label>
                     <input
@@ -731,17 +763,19 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       placeholder="House/Holding, Road, Area, Thana / Post Office"
                       value={fullAddress}
                       onChange={(e) => setFullAddress(e.target.value)}
-                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all ${
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all ${
+                        isDark ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-slate-50 text-slate-900 placeholder-slate-400 focus:bg-white'
+                      } ${
                         popupError?.field === 'address'
                           ? 'border-red-500 ring-2 ring-red-500/20'
-                          : 'border-neutral-800 focus:border-[#13487E]'
+                          : isDark ? 'border-neutral-800 focus:border-[#13487E]' : 'border-slate-300 focus:border-[#13487E]'
                       }`}
                     />
                   </div>
 
                   {/* 5. Delivery Instructions (Optional) */}
                   <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-xs font-bold text-neutral-300">
+                    <label className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
                       5. Delivery Instructions (Optional - বিশেষ নির্দেশনা)
                     </label>
                     <input
@@ -749,31 +783,37 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       placeholder="e.g. Call before delivery, deliver after 3 PM"
                       value={deliveryInstructions}
                       onChange={(e) => setDeliveryInstructions(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-[#13487E]"
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#13487E] ${
+                        isDark ? 'bg-neutral-950 border-neutral-800 text-white placeholder-neutral-600' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white'
+                      }`}
                     />
                   </div>
                 </div>
               </div>
 
               {/* MANDATORY COD DELIVERY CHARGE PAYMENT NOTICE */}
-              <div className="p-4 rounded-xl bg-[#13487E]/15 border border-[#13487E] space-y-1.5">
-                <div className="flex items-center gap-2 text-white font-black text-xs sm:text-sm">
+              <div className={`p-4 rounded-xl border space-y-1.5 ${
+                isDark ? 'bg-[#13487E]/15 border-[#13487E]' : 'bg-blue-50/80 border-blue-200'
+              }`}>
+                <div className={`flex items-center gap-2 font-black text-xs sm:text-sm ${isDark ? 'text-white' : 'text-blue-900'}`}>
                   <AlertCircle className="w-4 h-4 text-[#13487E] flex-shrink-0" />
                   <span>"COD order confirm করতে আগে Delivery Charge পরিশোধ করুন।"</span>
                 </div>
-                <p className="text-xs text-neutral-300 leading-relaxed pl-6">
-                  ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করতে অনুগ্রহ করে নিচের bKash বা Nagad নম্বরে অগ্রিম ডেলিভারি চার্জ <strong className="text-white font-mono">{formatBDT(deliveryFee)}</strong> Send Money করুন। বাকি পণ্যের মূল্য <strong className="text-white font-mono">{formatBDT(activeSubtotal)}</strong> পার্সেল পাওয়ার পর ডেলিভারি ম্যানকে ক্যাশ পরিশোধ করবেন।
+                <p className={`text-xs leading-relaxed pl-6 ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
+                  ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করতে অনুগ্রহ করে নিচের bKash বা Nagad নম্বরে অগ্রিম ডেলিভারি চার্জ <strong className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(deliveryFee)}</strong> Send Money করুন। বাকি পণ্যের মূল্য <strong className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(activeSubtotal)}</strong> পার্সেল পাওয়ার পর ডেলিভারি ম্যানকে ক্যাশ পরিশোধ করবেন।
                 </p>
               </div>
 
               {/* Payment Method & TrxID Section */}
-              <div className="space-y-4 p-5 rounded-xl bg-[#0a0a0d] border border-neutral-800">
-                <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <div className={`space-y-4 p-5 rounded-xl border ${
+                isDark ? 'bg-[#0a0a0d] border-neutral-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className={`flex items-center justify-between border-b pb-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <CreditCard className="w-4 h-4 text-[#13487E]" />
                     <span>পেমেন্ট মাধ্যম ও ট্রানজেকশন আইডি (TrxID):</span>
                   </span>
-                  <span className="text-xs text-emerald-400 font-mono font-bold">
+                  <span className="text-xs text-emerald-500 font-mono font-bold">
                     Charge: {formatBDT(deliveryFee)}
                   </span>
                 </div>
@@ -785,8 +825,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                     onClick={() => setDeliveryPaymentMethod('bKash')}
                     className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
                       deliveryPaymentMethod === 'bKash'
-                        ? 'bg-[#e2136e]/10 border-[#e2136e]'
-                        : 'bg-neutral-950 border-neutral-800'
+                        ? isDark ? 'bg-[#e2136e]/10 border-[#e2136e]' : 'bg-[#e2136e]/5 border-[#e2136e]'
+                        : isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -795,16 +835,18 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                           b
                         </div>
                         <div>
-                          <span className="font-bold text-white text-xs sm:text-sm block">bKash Personal</span>
-                          <span className="text-[10px] text-neutral-400">Send Money</span>
+                          <span className={`font-bold text-xs sm:text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>bKash Personal</span>
+                          <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Send Money</span>
                         </div>
                       </div>
                       {deliveryPaymentMethod === 'bKash' && (
                         <span className="w-5 h-5 rounded-full bg-[#e2136e] flex items-center justify-center text-white text-xs">✓</span>
                       )}
                     </div>
-                    <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2">
-                      <span className="font-mono font-black text-white text-xs sm:text-sm select-all">
+                    <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${
+                      isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+                    }`}>
+                      <span className={`font-mono font-black text-xs sm:text-sm select-all ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {currentBkashNumber}
                       </span>
                       <button
@@ -813,9 +855,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                           e.stopPropagation();
                           handleCopy(currentBkashNumber, 'bkash');
                         }}
-                        className="px-2.5 py-1 rounded bg-neutral-800 text-neutral-300 text-xs font-bold flex items-center gap-1.5"
+                        className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                          isDark ? 'bg-neutral-800 text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+                        }`}
                       >
-                        {copiedNumber === 'bkash' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedNumber === 'bkash' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{copiedNumber === 'bkash' ? 'Copied' : 'Copy'}</span>
                       </button>
                     </div>
@@ -826,8 +870,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                     onClick={() => setDeliveryPaymentMethod('Nagad')}
                     className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
                       deliveryPaymentMethod === 'Nagad'
-                        ? 'bg-[#f7941d]/10 border-[#f7941d]'
-                        : 'bg-neutral-950 border-neutral-800'
+                        ? isDark ? 'bg-[#f7941d]/10 border-[#f7941d]' : 'bg-[#f7941d]/5 border-[#f7941d]'
+                        : isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -836,16 +880,18 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                           N
                         </div>
                         <div>
-                          <span className="font-bold text-white text-xs sm:text-sm block">Nagad Personal</span>
-                          <span className="text-[10px] text-neutral-400">Send Money</span>
+                          <span className={`font-bold text-xs sm:text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>Nagad Personal</span>
+                          <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Send Money</span>
                         </div>
                       </div>
                       {deliveryPaymentMethod === 'Nagad' && (
                         <span className="w-5 h-5 rounded-full bg-[#f7941d] flex items-center justify-center text-white text-xs">✓</span>
                       )}
                     </div>
-                    <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2">
-                      <span className="font-mono font-black text-white text-xs sm:text-sm select-all">
+                    <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${
+                      isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+                    }`}>
+                      <span className={`font-mono font-black text-xs sm:text-sm select-all ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {currentNagadNumber}
                       </span>
                       <button
@@ -854,9 +900,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                           e.stopPropagation();
                           handleCopy(currentNagadNumber, 'nagad');
                         }}
-                        className="px-2.5 py-1 rounded bg-neutral-800 text-neutral-300 text-xs font-bold flex items-center gap-1.5"
+                        className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                          isDark ? 'bg-neutral-800 text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+                        }`}
                       >
-                        {copiedNumber === 'nagad' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedNumber === 'nagad' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{copiedNumber === 'nagad' ? 'Copied' : 'Copy'}</span>
                       </button>
                     </div>
@@ -865,7 +913,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
 
                 {/* Transaction ID Input */}
                 <div className="space-y-2 pt-2">
-                  <label className="text-xs font-bold text-white flex items-center gap-1">
+                  <label className={`text-xs font-bold flex items-center gap-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <span>{deliveryPaymentMethod} Transaction ID (TrxID)</span>
                     <span className="text-[#13487E]">*</span>
                   </label>
@@ -876,15 +924,17 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       value={transactionId}
                       onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
                       placeholder="e.g. 9K382J879L"
-                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-base font-mono font-bold text-amber-300 placeholder-neutral-600 focus:outline-none uppercase transition-all ${
+                      className={`w-full border rounded-xl px-4 py-3 text-base font-mono font-bold focus:outline-none uppercase transition-all ${
+                        isDark ? 'bg-neutral-950 text-amber-300 placeholder-neutral-600' : 'bg-white text-amber-600 placeholder-slate-400'
+                      } ${
                         popupError?.field === 'trxId'
                           ? 'border-red-500 ring-2 ring-red-500/20'
-                          : 'border-neutral-700 focus:border-[#13487E]'
+                          : isDark ? 'border-neutral-700 focus:border-[#13487E]' : 'border-slate-300 focus:border-[#13487E]'
                       }`}
                     />
-                    <ShieldCheck className="w-5 h-5 text-neutral-500 absolute right-4 top-3.5" />
+                    <ShieldCheck className="w-5 h-5 text-neutral-400 absolute right-4 top-3.5" />
                   </div>
-                  <p className="text-xs text-neutral-400">
+                  <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
                     টাকা পাঠানোর পর প্রাপ্ত TrxID টি এখানে দিন। (কোনো পিন, ওটিপি বা সেন্ডার নম্বর লাগবে না)।
                   </p>
                 </div>
@@ -892,12 +942,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
 
               {/* Delivery & Exchange Policy Section */}
               {settings.delivery_policy_enabled !== false && (
-                <div className="p-4 sm:p-5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-neutral-800 text-xs font-bold uppercase tracking-wider text-white">
+                <div className={`p-4 sm:p-5 rounded-xl border space-y-3 ${
+                  isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className={`flex items-center gap-2 pb-2.5 border-b text-xs font-bold uppercase tracking-wider ${
+                    isDark ? 'border-neutral-800 text-white' : 'border-slate-200 text-slate-900'
+                  }`}>
                     <RefreshCw className="w-4 h-4 text-[#13487E]" />
                     <span>Delivery & Exchange Policy</span>
                   </div>
-                  <div className="text-xs text-neutral-300 leading-relaxed whitespace-pre-line font-sans">
+                  <div className={`text-xs leading-relaxed whitespace-pre-line font-sans ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
                     {settings.delivery_policy_text || `Return Policy:
 1️⃣ প্রোডাক্ট হাতে পাওয়ার সময় অবশ্যই Unboxing Video করতে হবে।
 2️⃣ যদি কোনো সমস্যা থাকে, তাহলে সেই Unboxing Video সহ আমাদের জানাতে হবে।
@@ -940,14 +994,18 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
           onClick={handleClosePopup}
         >
           <div
-            className="relative w-full max-w-md bg-[#0f0f16] border border-amber-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl text-center space-y-4 shadow-black/90"
+            className={`relative w-full max-w-md border border-amber-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl text-center space-y-4 ${
+              isDark ? 'bg-[#0f0f16] text-white shadow-black/90' : 'bg-white text-slate-900 shadow-slate-300/60'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button top-right */}
             <button
               type="button"
               onClick={handleClosePopup}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+              className={`absolute top-4 right-4 p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
+              }`}
               aria-label="Close error popup"
             >
               <X className="w-5 h-5" />
@@ -959,13 +1017,13 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
             </div>
 
             <div className="space-y-2">
-              <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+              <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-bold uppercase tracking-wider">
                 প্রয়োজনীয় তথ্য অসম্পূর্ণ
               </div>
-              <h3 className="text-xl font-black text-white font-['Space_Grotesk'] tracking-tight">
+              <h3 className={`text-xl font-black font-['Space_Grotesk'] tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {popupError.title}
               </h3>
-              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
+              <p className={`text-xs sm:text-sm leading-relaxed font-sans ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
                 {popupError.message}
               </p>
             </div>

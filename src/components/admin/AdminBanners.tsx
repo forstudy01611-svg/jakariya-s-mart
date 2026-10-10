@@ -79,20 +79,18 @@ export const AdminBanners: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      setErrorMsg('Banner title is required.');
-      return;
-    }
     if (!formData.image_url.trim()) {
       setErrorMsg('Banner image URL or file is required.');
       return;
     }
 
+    const finalTitle = formData.title.trim() || 'Store Banner';
+
     setIsSubmitting(true);
     try {
       if (editingBanner) {
         await updateBanner(editingBanner.id, {
-          title: formData.title.trim(),
+          title: finalTitle,
           subtitle: formData.subtitle.trim(),
           image_url: formData.image_url.trim(),
           button_text: formData.button_text.trim(),
@@ -102,7 +100,7 @@ export const AdminBanners: React.FC = () => {
         });
       } else {
         await addBanner({
-          title: formData.title.trim(),
+          title: finalTitle,
           subtitle: formData.subtitle.trim(),
           image_url: formData.image_url.trim(),
           button_text: formData.button_text.trim(),
@@ -154,14 +152,14 @@ export const AdminBanners: React.FC = () => {
               key={banner.id}
               className="bg-[#0d0d12] border border-neutral-800/80 rounded-2xl overflow-hidden flex flex-col md:flex-row hover:border-neutral-700 transition-colors"
             >
-              {/* Banner Preview Image */}
-              <div className="relative w-full md:w-80 h-44 bg-neutral-950 flex-shrink-0 overflow-hidden">
+              {/* Banner Preview Image (3:1) */}
+              <div className="relative w-full md:w-80 aspect-[3/1] bg-neutral-950 flex-shrink-0 overflow-hidden">
                 <img
                   src={banner.image_url}
                   alt={banner.title}
-                  className="w-full h-full object-cover brightness-75"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-2 left-2">
                   <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-black/80 text-white border border-neutral-700">
                     Order: #{banner.display_order}
                   </span>
@@ -252,53 +250,32 @@ export const AdminBanners: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                  Headline Title <span className="text-[#13487E]">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. WELCOME TO Jakariya's Mart STREETWEAR"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#13487E]"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                  Subtitle / Subheading
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Re-engineered cyberpunk silhouettes and tactical aesthetics..."
-                  value={formData.subtitle}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#13487E] resize-none"
-                />
-              </div>
-
               {/* Banner Image */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                  Banner Image <span className="text-[#13487E]">*</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+                    Banner Image <span className="text-[#13487E]">*</span>
+                  </label>
+                  <span className="text-[11px] text-[#13487E] font-medium">
+                    Recommended: 1920×640px or 1200×400px (3:1 Ratio)
+                  </span>
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     required
-                    placeholder="https://... or upload photo"
+                    placeholder="https://... or upload image file"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#13487E]"
                   />
-                  <label className="px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-neutral-300 cursor-pointer flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5 text-[#13487E]" />
-                    <span>Upload</span>
+                  <label className="px-3.5 py-2 rounded-xl bg-[#13487E]/20 hover:bg-[#13487E]/30 border border-[#13487E]/50 text-xs font-bold text-[#13487E] cursor-pointer flex items-center gap-1.5 transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={isUploading}
                       onChange={handleImageUpload}
                       className="hidden"
                     />
@@ -306,7 +283,7 @@ export const AdminBanners: React.FC = () => {
                 </div>
 
                 {formData.image_url && (
-                  <div className="relative h-28 rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950">
+                  <div className="relative aspect-[21/9] max-h-40 rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950">
                     <img
                       src={formData.image_url}
                       alt="Banner Preview"
@@ -316,32 +293,38 @@ export const AdminBanners: React.FC = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                    Button Label
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Shop Now"
-                    value={formData.button_text}
-                    onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#13487E]"
-                  />
-                </div>
+              {/* Banner Name / Note (Internal Reference) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                  Banner Name / Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Summer Promo / Eid Drop (Admin reference)"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#13487E]"
+                />
+                <p className="text-[11px] text-neutral-500">
+                  Note: The storefront displays this clean banner image directly without any text overlay.
+                </p>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                    Button URL
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. #catalog"
-                    value={formData.button_url}
-                    onChange={(e) => setFormData({ ...formData, button_url: e.target.value })}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#13487E]"
-                  />
-                </div>
+              {/* Click URL */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                  Click Redirect URL (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. #catalog or https://..."
+                  value={formData.button_url}
+                  onChange={(e) => setFormData({ ...formData, button_url: e.target.value })}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#13487E]"
+                />
+                <p className="text-[11px] text-neutral-500">
+                  When customers click the banner, they will be redirected to this link.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

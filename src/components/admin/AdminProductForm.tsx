@@ -31,7 +31,8 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
     description: '',
     price: '',
     discount_price: '',
-    category_id: categories[0]?.id || '',
+    category_id: categories.find((c) => !c.parent_id)?.id || categories[0]?.id || '',
+    subcategory_id: '',
     stock: '',
     sku: '',
     is_featured: false,
@@ -56,7 +57,8 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
         discount_price: existingProduct.discount_price !== null && existingProduct.discount_price !== undefined
           ? existingProduct.discount_price.toString()
           : '',
-        category_id: existingProduct.category_id || (categories.length > 0 ? categories[0].id : ''),
+        category_id: existingProduct.category_id || (categories.find((c) => !c.parent_id)?.id || categories[0]?.id || ''),
+        subcategory_id: existingProduct.subcategory_id || '',
         stock: existingProduct.stock.toString(),
         sku: existingProduct.sku || '',
         is_featured: existingProduct.is_featured,
@@ -67,9 +69,10 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
     } else if (!isEditing && categories.length > 0) {
       // If creating a new product and no category selected, or current selection is invalid
       setFormData((prev) => {
-        const isCurrentValid = categories.some(c => c.id === prev.category_id);
+        const isCurrentValid = categories.some((c) => c.id === prev.category_id);
         if (!prev.category_id || !isCurrentValid) {
-          return { ...prev, category_id: categories[0].id };
+          const defaultCat = categories.find((c) => !c.parent_id)?.id || categories[0]?.id || '';
+          return { ...prev, category_id: defaultCat, subcategory_id: '' };
         }
         return prev;
       });
@@ -195,6 +198,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
         price: parsedPrice,
         discount_price: parsedDiscountPrice,
         category_id: formData.category_id,
+        subcategory_id: formData.subcategory_id.trim() || null,
         stock: parsedStock,
         sku: formData.sku.trim() || undefined,
         images,
@@ -298,23 +302,62 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Category, Subcategory, and SKU Code */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                    Category <span className="text-[#13487E]">*</span>
+                    Main Category <span className="text-[#13487E]">*</span>
                   </label>
                   <select
                     required
                     value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                    onChange={(e) => {
+                      const newCatId = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        category_id: newCatId,
+                        subcategory_id: '',
+                      }));
+                    }}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#13487E] cursor-pointer"
                   >
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    {categories
+                      .filter((c) => !c.parent_id)
+                      .map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                   </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                      Subcategory
+                    </label>
+                    <span className="text-[10px] text-neutral-500 font-normal">Optional</span>
+                  </div>
+                  {(() => {
+                    const availableSubs = categories.filter((c) => c.parent_id === formData.category_id);
+                    return (
+                      <select
+                        value={formData.subcategory_id}
+                        disabled={availableSubs.length === 0}
+                        onChange={(e) => setFormData({ ...formData, subcategory_id: e.target.value })}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#13487E] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {availableSubs.length > 0 ? '-- None (General) --' : 'No Subcategories'}
+                        </option>
+                        {availableSubs.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            ↳ {sub.name}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-1.5">

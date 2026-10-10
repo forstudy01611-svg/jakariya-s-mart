@@ -41,8 +41,15 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ onNavigate }) => {
         if (!matchesName && !matchesSku) return false;
       }
       // Category filter
-      if (selectedCategory !== 'all' && p.category_id !== selectedCategory) {
-        return false;
+      if (selectedCategory !== 'all') {
+        const childSubIds = categories.filter((c) => c.parent_id === selectedCategory).map((c) => c.id);
+        const matchesDirectly = p.category_id === selectedCategory;
+        const matchesSubcategory = p.subcategory_id === selectedCategory;
+        const matchesChild = childSubIds.includes(p.category_id) || (p.subcategory_id ? childSubIds.includes(p.subcategory_id) : false);
+
+        if (!matchesDirectly && !matchesSubcategory && !matchesChild) {
+          return false;
+        }
       }
       // Status filter
       if (statusFilter === 'active' && !p.is_active) return false;
@@ -125,11 +132,23 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ onNavigate }) => {
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-none focus:border-[#13487E] cursor-pointer"
             >
               <option value="all">All Categories ({categories.length})</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {categories
+                .filter((c) => !c.parent_id)
+                .map((main) => {
+                  const subs = categories.filter((c) => c.parent_id === main.id);
+                  return (
+                    <React.Fragment key={main.id}>
+                      <option value={main.id}>
+                        {main.name}
+                      </option>
+                      {subs.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          &nbsp;&nbsp;↳ {s.name}
+                        </option>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
             </select>
           </div>
 
@@ -243,12 +262,24 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ onNavigate }) => {
                         {product.sku || '—'}
                       </td>
 
-                      {/* Category */}
+                      {/* Category & Subcategory */}
                       <td className="py-3 px-4 text-neutral-300">
                         {category ? (
-                          <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-[11px]">
-                            {category.name}
-                          </span>
+                          <div className="space-y-1">
+                            <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-[11px] inline-block font-medium">
+                              {category.name}
+                            </span>
+                            {product.subcategory_id && (() => {
+                              const sub = categories.find((c) => c.id === product.subcategory_id);
+                              if (!sub) return null;
+                              return (
+                                <div className="text-[10px] text-sky-400 flex items-center gap-1 font-mono pl-1">
+                                  <span>↳</span>
+                                  <span>{sub.name}</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         ) : (
                           <span className="text-neutral-500 italic">Uncategorized</span>
                         )}
