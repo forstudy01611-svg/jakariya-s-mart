@@ -191,7 +191,7 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
                 >
                   <div className="w-16 h-16 rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 border border-neutral-800">
                     <img
-                      src={item.product_image}
+                      src={item.product_image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                       alt={item.product_name}
                       className="w-full h-full object-cover"
                     />

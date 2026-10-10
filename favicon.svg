@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="jmGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E66B4" />
+      <stop offset="100%" stop-color="#13487E" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <!-- Background Rounded Hex/Square -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0A0A0C" stroke="#1E66B4" stroke-width="2.5" />
+  <!-- Inner Glow Circle -->
+  <circle cx="32" cy="32" r="24" fill="url(#jmGradient)" opacity="0.15" />
+  <!-- Stylized "J" Monogram -->
+  <path d="M37 18 V36 C37 42.5 32.5 47 25.5 47 C20 47 16 43.5 16 38.5 C16 35.5 18.5 33 21.5 33 C24 33 25.5 34.8 25.5 37 C25.5 39.2 24.5 40.2 23 40.5 C23.8 41.5 24.8 41.8 26 41.8 C29 41.8 31 39.5 31 35.5 V18 Z" 
+        fill="url(#jmGradient)" 
+        filter="url(#shadow)" />
+  <circle cx="37" cy="18" r="3" fill="#60A5FA" />
+</svg>

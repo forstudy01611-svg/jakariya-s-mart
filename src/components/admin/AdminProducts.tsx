@@ -241,7 +241,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ onNavigate }) => {
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 rounded-lg bg-neutral-950 border border-neutral-800 overflow-hidden flex-shrink-0">
                             <img
-                              src={product.images[0] || ''}
+                              src={product.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                               alt={product.name}
                               className="w-full h-full object-cover"
                             />

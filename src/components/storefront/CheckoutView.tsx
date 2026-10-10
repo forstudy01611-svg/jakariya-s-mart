@@ -540,7 +540,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                       <div key={idx} className="flex items-center gap-3">
                         <div className={`w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'}`}>
                           <img
-                            src={item.product.images[0] || ''}
+                            src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                             alt={item.product.name}
                             className="w-full h-full object-cover"
                           />

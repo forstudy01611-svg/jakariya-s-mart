@@ -89,7 +89,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="p-6 bg-neutral-950 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-neutral-800">
             <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
               <img
-                src={product.images[selectedImageIndex] || product.images[0]}
+                src={product.images?.[selectedImageIndex] || product.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                 alt={product.name}
                 className="w-full h-full object-cover object-center"
               />
@@ -101,9 +101,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Thumbnail selector */}
-            {product.images.length > 1 && (
+            {product.images.filter((img) => Boolean(img && img.trim())).length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {product.images.map((img, idx) => (
+                {product.images.filter((img) => Boolean(img && img.trim())).map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}

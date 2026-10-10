@@ -195,7 +195,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 title={t('click_to_zoom')}
               >
                 <img
-                  src={product.images[selectedImageIndex] || product.images[0]}
+                  src={product.images?.[selectedImageIndex] || product.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                   alt={product.name}
                   className="w-full h-full object-cover object-center group-hover/preview:scale-105 transition-transform duration-500"
                 />
@@ -221,9 +221,9 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               </div>
 
               {/* Thumbnail selector */}
-              {product.images.length > 1 && (
+              {product.images.filter((img) => Boolean(img && img.trim())).length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                  {product.images.map((img, idx) => (
+                  {product.images.filter((img) => Boolean(img && img.trim())).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}

@@ -558,7 +558,7 @@ export const AdminCoupons: React.FC = () => {
                   >
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-950 flex-shrink-0 border border-neutral-800">
                       <img
-                        src={prod.images[0]}
+                        src={prod.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                         alt={prod.name}
                         className="w-full h-full object-cover"
                       />
@@ -835,7 +835,7 @@ export const AdminCoupons: React.FC = () => {
                               />
                               <div className="w-9 h-9 rounded-md overflow-hidden bg-neutral-950 flex-shrink-0 border border-neutral-800">
                                 <img
-                                  src={p.images[0]}
+                                  src={p.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                                   alt={p.name}
                                   className="w-full h-full object-cover"
                                 />

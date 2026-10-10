@@ -150,7 +150,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       }`}
                     >
                       <img
-                        src={item.product.images[0]}
+                        src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
                         alt={item.product.name}
                         className="w-full h-full object-cover"
                       />

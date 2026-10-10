@@ -258,16 +258,33 @@ export const compressDataUrl = (
 };
 
 /**
+ * Sanitizes a banner array to ensure oversized base64 images don't exceed localStorage limit.
+ * Full high-fidelity images are always stored and retrieved from IndexedDB.
+ */
+const sanitizeBannersForLocalStorage = (banners: any[]): any[] => {
+  return banners.map((b) => {
+    if (!b) return b;
+    if (typeof b.image_url === 'string' && b.image_url.startsWith('data:image/') && b.image_url.length > 60000) {
+      return {
+        ...b,
+        image_url: '',
+        _stored_in_idb: true,
+      };
+    }
+    return b;
+  });
+};
+
+/**
  * Sanitizes a product object to make sure oversized base64 images don't blow up localStorage
  */
 const sanitizeProductsForLocalStorage = (products: any[]): any[] => {
   return products.map((prod) => {
     if (!prod || !Array.isArray(prod.images)) return prod;
     const sanitizedImages = prod.images.map((img: string) => {
-      // If a single image is a gigantic base64 (> 150KB), we keep it capped
-      if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 150000) {
-        // Return truncated or keep reasonable
-        return img;
+      // If a single image is a gigantic base64 (> 100KB), keep lightweight in localStorage
+      if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 100000) {
+        return '';
       }
       return img;
     });
@@ -283,7 +300,7 @@ const sanitizeProductsForLocalStorage = (products: any[]): any[] => {
  * Automatically saves to IndexedDB as high-capacity backing store
  */
 export const safeSetItem = async <T>(key: string, value: T): Promise<void> => {
-  // Always persist to IndexedDB asynchronously
+  // Always persist pristine data to IndexedDB asynchronously
   idbStorage.setItem(key, value).catch(() => {});
 
   if (typeof window === 'undefined' || !window.localStorage) return;
@@ -304,7 +321,7 @@ export const safeSetItem = async <T>(key: string, value: T): Promise<void> => {
       // 1. Clean up old obsolete versions
       cleanupLegacyStorage();
 
-      // 2. Try again
+      // 2. Try again after cleanup
       try {
         localStorage.setItem(key, serialized);
         return;
@@ -312,33 +329,21 @@ export const safeSetItem = async <T>(key: string, value: T): Promise<void> => {
         // Still exceeded quota
       }
 
-      // 3. If saving products, optimize payload
+      // 3. Optimize payload for localStorage (full version already in IndexedDB)
       if (Array.isArray(value)) {
         try {
-          const sanitized = sanitizeProductsForLocalStorage(value);
+          let sanitized: any = value;
+          if (key.includes('banners')) {
+            sanitized = sanitizeBannersForLocalStorage(value);
+          } else if (key.includes('products')) {
+            sanitized = sanitizeProductsForLocalStorage(value);
+          }
           localStorage.setItem(key, JSON.stringify(sanitized));
           return;
         } catch {
-          // If still fails, store minimal metadata in localStorage
-          // Full data is safely retained in IndexedDB and memory!
-          try {
-            const minimal = value.slice(0, 30).map((item: any) => ({
-              ...item,
-              images: (item.images || []).map((img: string) =>
-                typeof img === 'string' && img.startsWith('data:image/') ? '' : img
-              ),
-            }));
-            localStorage.setItem(key, JSON.stringify(minimal));
-            return;
-          } catch {
-            console.warn(`[Storage] Quota full for ${key}. Data safely preserved in IndexedDB.`);
-          }
+          // If even sanitized fails, data is safely retained in IndexedDB
         }
-      } else {
-        console.warn(`[Storage] Quota full for ${key}. Data safely preserved in IndexedDB.`);
       }
-    } else {
-      console.warn(`[Storage] Could not write ${key} to localStorage:`, err?.message || err);
     }
   }
 };

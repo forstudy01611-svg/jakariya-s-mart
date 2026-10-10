@@ -186,7 +186,7 @@ export const HeroBanner: React.FC = () => {
                   className="min-w-full w-full h-full flex-shrink-0 relative select-none overflow-hidden"
                 >
                   <img
-                    src={banner.image_url}
+                    src={banner.image_url || 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=1920&h=640&auto=format&fit=crop&q=80'}
                     alt={banner.title || `Promotion Banner ${idx + 1}`}
                     className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700"
                     loading={idx === 0 ? 'eager' : 'lazy'}

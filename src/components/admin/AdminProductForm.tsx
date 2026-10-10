@@ -433,7 +433,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
               {/* Image Previews Grid */}
               {images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {images.map((imgUrl, idx) => (
+                  {images.filter((imgUrl) => Boolean(imgUrl && imgUrl.trim())).map((imgUrl, idx) => (
                     <div
                       key={idx}
                       className="group relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800"

@@ -296,12 +296,28 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const idbProducts = await idbStorage.getItem<Product[]>(STORAGE_KEYS.PRODUCTS);
         if (idbProducts && Array.isArray(idbProducts) && idbProducts.length > 0) {
           setProducts((current) => {
-            // If current in-memory products is still the initial stock and IDB has custom products, sync
             if (current.length === INITIAL_PRODUCTS.length && current[0]?.id === INITIAL_PRODUCTS[0]?.id && idbProducts.length > 0) {
               return idbProducts;
             }
             return current;
           });
+        }
+
+        const idbBanners = await idbStorage.getItem<Banner[]>(STORAGE_KEYS.BANNERS);
+        if (idbBanners && Array.isArray(idbBanners) && idbBanners.length > 0) {
+          setBanners((current) => {
+            // Restore from IndexedDB if currently on default banners or if IDB has richer entries
+            const hasRestoredImages = idbBanners.some((b) => b.image_url && b.image_url.length > 50);
+            if (hasRestoredImages) {
+              return idbBanners;
+            }
+            return current;
+          });
+        }
+
+        const idbSettings = await idbStorage.getItem<StoreSettings>(STORAGE_KEYS.SETTINGS);
+        if (idbSettings && typeof idbSettings === 'object' && idbSettings.store_name) {
+          setSettings((prev) => ({ ...prev, ...idbSettings }));
         }
       } catch {
         // ignore
@@ -1472,9 +1488,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     // High quality data URL fallback:
-    // If it's a banner, preserve crisp 4K resolution (up to 3840px) with 92% quality instead of downscaling to 900px
-    const maxDim = options?.maxDimension ?? (options?.isBanner ? 3840 : 1600);
-    const quality = options?.quality ?? (options?.isBanner ? 0.92 : 0.85);
+    // Balanced crisp HD resolution (up to 1920px for banners, 1200px for products) to ensure fast load times and avoid storage quota overflows
+    const maxDim = options?.maxDimension ?? (options?.isBanner ? 1920 : 1200);
+    const quality = options?.quality ?? (options?.isBanner ? 0.82 : 0.80);
     return await compressImageFile(file, maxDim, quality);
   };
 

@@ -155,7 +155,7 @@ export const AdminBanners: React.FC = () => {
               {/* Banner Preview Image (3:1) */}
               <div className="relative w-full md:w-80 aspect-[3/1] bg-neutral-950 flex-shrink-0 overflow-hidden">
                 <img
-                  src={banner.image_url}
+                  src={banner.image_url || 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=1920&h=640&auto=format&fit=crop&q=80'}
                   alt={banner.title}
                   className="w-full h-full object-cover"
                 />
