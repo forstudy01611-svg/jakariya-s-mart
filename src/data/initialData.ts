@@ -289,6 +289,9 @@ export const INITIAL_SETTINGS: StoreSettings = {
   nagad_number: '01800-123456',
   nagad_type: 'Personal (Send Money)',
   payment_instructions: 'COD order confirm করতে উপরে দেওয়া নম্বরে Delivery Charge Send Money করুন এবং নিচের বক্সে Transaction ID দিন।',
+  free_delivery_enabled: false,
+  free_delivery_target: 'all',
+  free_delivery_min_amount: 2000,
   delivery_policy_enabled: true,
   delivery_policy_text: `Return Policy:
 1️⃣ প্রোডাক্ট হাতে পাওয়ার সময় অবশ্যই Unboxing Video করতে হবে।

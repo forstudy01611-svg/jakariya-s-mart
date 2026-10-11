@@ -195,12 +195,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
   const couponDiscount = couponCheck && couponCheck.isValid ? couponCheck.discount : 0;
   const effectiveSubtotal = Math.max(0, activeSubtotal - couponDiscount);
 
-  // Delivery Charge calculation based on District
+  // Delivery Charge calculation based on District & Free Delivery rules
   const isDhaka = isDhakaDistrict(district);
   const deliveryFee = calculateDeliveryCharge(
     district,
     settings.delivery_charge,
-    settings.delivery_charge_outside
+    settings.delivery_charge_outside,
+    effectiveSubtotal,
+    settings.free_delivery_enabled,
+    settings.free_delivery_min_amount,
+    settings.free_delivery_target ?? 'all'
   );
   const grandTotal = effectiveSubtotal + deliveryFee;
 
@@ -791,154 +795,170 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* MANDATORY COD DELIVERY CHARGE PAYMENT NOTICE */}
-              <div className={`p-4 rounded-xl border space-y-1.5 ${
-                isDark ? 'bg-[#13487E]/15 border-[#13487E]' : 'bg-blue-50/80 border-blue-200'
-              }`}>
-                <div className={`flex items-center gap-2 font-black text-xs sm:text-sm ${isDark ? 'text-white' : 'text-blue-900'}`}>
-                  <AlertCircle className="w-4 h-4 text-[#13487E] flex-shrink-0" />
-                  <span>"COD order confirm করতে আগে Delivery Charge পরিশোধ করুন।"</span>
-                </div>
-                <p className={`text-xs leading-relaxed pl-6 ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
-                  ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করতে অনুগ্রহ করে নিচের bKash বা Nagad নম্বরে অগ্রিম ডেলিভারি চার্জ <strong className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(deliveryFee)}</strong> Send Money করুন। বাকি পণ্যের মূল্য <strong className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(activeSubtotal)}</strong> পার্সেল পাওয়ার পর ডেলিভারি ম্যানকে ক্যাশ পরিশোধ করবেন।
-                </p>
-              </div>
-
-              {/* Payment Method & TrxID Section */}
-              <div className={`space-y-4 p-5 rounded-xl border ${
-                isDark ? 'bg-[#0a0a0d] border-neutral-800' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <div className={`flex items-center justify-between border-b pb-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                  <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    <CreditCard className="w-4 h-4 text-[#13487E]" />
-                    <span>পেমেন্ট মাধ্যম ও ট্রানজেকশন আইডি (TrxID):</span>
-                  </span>
-                  <span className="text-xs text-emerald-500 font-mono font-bold">
-                    Charge: {formatBDT(deliveryFee)}
-                  </span>
-                </div>
-
-                {/* bKash & Nagad Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* bKash Card */}
-                  <div
-                    onClick={() => setDeliveryPaymentMethod('bKash')}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
-                      deliveryPaymentMethod === 'bKash'
-                        ? isDark ? 'bg-[#e2136e]/10 border-[#e2136e]' : 'bg-[#e2136e]/5 border-[#e2136e]'
-                        : isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-[#e2136e] text-white flex items-center justify-center font-bold text-xs">
-                          b
-                        </div>
-                        <div>
-                          <span className={`font-bold text-xs sm:text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>bKash Personal</span>
-                          <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Send Money</span>
-                        </div>
-                      </div>
-                      {deliveryPaymentMethod === 'bKash' && (
-                        <span className="w-5 h-5 rounded-full bg-[#e2136e] flex items-center justify-center text-white text-xs">✓</span>
-                      )}
+              {/* MANDATORY COD DELIVERY CHARGE PAYMENT NOTICE (Only shown if delivery fee > 0) */}
+              {deliveryFee > 0 ? (
+                <>
+                  <div className={`p-4 rounded-xl border space-y-1.5 ${
+                    isDark ? 'bg-[#13487E]/15 border-[#13487E]' : 'bg-blue-50/80 border-blue-200'
+                  }`}>
+                    <div className={`flex items-center gap-2 font-black text-xs sm:text-sm ${isDark ? 'text-white' : 'text-blue-900'}`}>
+                      <AlertCircle className="w-4 h-4 text-[#13487E] flex-shrink-0" />
+                      <span>"COD order confirm করতে আগে Delivery Charge পরিশোধ করুন।"</span>
                     </div>
-                    <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${
-                      isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
-                    }`}>
-                      <span className={`font-mono font-black text-xs sm:text-sm select-all ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {currentBkashNumber}
+                    <p className={`text-xs leading-relaxed pl-6 ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
+                      ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করতে অনুগ্রহ করে নিচের bKash বা Nagad নম্বরে অগ্রিম ডেলিভারি চার্জ <strong className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(deliveryFee)}</strong> Send Money করুন। বাকি পণ্যের মূল্য <strong className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatBDT(activeSubtotal)}</strong> পার্সেল পাওয়ার পর ডেলিভারি ম্যানকে ক্যাশ পরিশোধ করবেন।
+                    </p>
+                  </div>
+
+                  {/* Payment Method & TrxID Section */}
+                  <div className={`space-y-4 p-5 rounded-xl border ${
+                    isDark ? 'bg-[#0a0a0d] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div className={`flex items-center justify-between border-b pb-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                      <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <CreditCard className="w-4 h-4 text-[#13487E]" />
+                        <span>পেমেন্ট মাধ্যম ও ট্রানজেকশন আইডি (TrxID):</span>
                       </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopy(currentBkashNumber, 'bkash');
-                        }}
-                        className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-                          isDark ? 'bg-neutral-800 text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+                      <span className="text-xs text-emerald-500 font-mono font-bold">
+                        Charge: {formatBDT(deliveryFee)}
+                      </span>
+                    </div>
+
+                    {/* bKash & Nagad Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* bKash Card */}
+                      <div
+                        onClick={() => setDeliveryPaymentMethod('bKash')}
+                        className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
+                          deliveryPaymentMethod === 'bKash'
+                            ? isDark ? 'bg-[#e2136e]/10 border-[#e2136e]' : 'bg-[#e2136e]/5 border-[#e2136e]'
+                            : isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-slate-200'
                         }`}
                       >
-                        {copiedNumber === 'bkash' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedNumber === 'bkash' ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Nagad Card */}
-                  <div
-                    onClick={() => setDeliveryPaymentMethod('Nagad')}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
-                      deliveryPaymentMethod === 'Nagad'
-                        ? isDark ? 'bg-[#f7941d]/10 border-[#f7941d]' : 'bg-[#f7941d]/5 border-[#f7941d]'
-                        : isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-[#f7941d] text-white flex items-center justify-center font-bold text-xs">
-                          N
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-[#e2136e] text-white flex items-center justify-center font-bold text-xs">
+                              b
+                            </div>
+                            <div>
+                              <span className={`font-bold text-xs sm:text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>bKash Personal</span>
+                              <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Send Money</span>
+                            </div>
+                          </div>
+                          {deliveryPaymentMethod === 'bKash' && (
+                            <span className="w-5 h-5 rounded-full bg-[#e2136e] flex items-center justify-center text-white text-xs">✓</span>
+                          )}
                         </div>
-                        <div>
-                          <span className={`font-bold text-xs sm:text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>Nagad Personal</span>
-                          <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Send Money</span>
+                        <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${
+                          isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+                        }`}>
+                          <span className={`font-mono font-black text-xs sm:text-sm select-all ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            {currentBkashNumber}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(currentBkashNumber, 'bkash');
+                            }}
+                            className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                              isDark ? 'bg-neutral-800 text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+                            }`}
+                          >
+                            {copiedNumber === 'bkash' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedNumber === 'bkash' ? 'Copied' : 'Copy'}</span>
+                          </button>
                         </div>
                       </div>
-                      {deliveryPaymentMethod === 'Nagad' && (
-                        <span className="w-5 h-5 rounded-full bg-[#f7941d] flex items-center justify-center text-white text-xs">✓</span>
-                      )}
-                    </div>
-                    <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${
-                      isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
-                    }`}>
-                      <span className={`font-mono font-black text-xs sm:text-sm select-all ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {currentNagadNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopy(currentNagadNumber, 'nagad');
-                        }}
-                        className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-                          isDark ? 'bg-neutral-800 text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+
+                      {/* Nagad Card */}
+                      <div
+                        onClick={() => setDeliveryPaymentMethod('Nagad')}
+                        className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
+                          deliveryPaymentMethod === 'Nagad'
+                            ? isDark ? 'bg-[#f7941d]/10 border-[#f7941d]' : 'bg-[#f7941d]/5 border-[#f7941d]'
+                            : isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-slate-200'
                         }`}
                       >
-                        {copiedNumber === 'nagad' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedNumber === 'nagad' ? 'Copied' : 'Copy'}</span>
-                      </button>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-[#f7941d] text-white flex items-center justify-center font-bold text-xs">
+                              N
+                            </div>
+                            <div>
+                              <span className={`font-bold text-xs sm:text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>Nagad Personal</span>
+                              <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Send Money</span>
+                            </div>
+                          </div>
+                          {deliveryPaymentMethod === 'Nagad' && (
+                            <span className="w-5 h-5 rounded-full bg-[#f7941d] flex items-center justify-center text-white text-xs">✓</span>
+                          )}
+                        </div>
+                        <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${
+                          isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+                        }`}>
+                          <span className={`font-mono font-black text-xs sm:text-sm select-all ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            {currentNagadNumber}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(currentNagadNumber, 'nagad');
+                            }}
+                            className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                              isDark ? 'bg-neutral-800 text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+                            }`}
+                          >
+                            {copiedNumber === 'nagad' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedNumber === 'nagad' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transaction ID Input */}
+                    <div className="space-y-2 pt-2">
+                      <label className={`text-xs font-bold flex items-center gap-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <span>{deliveryPaymentMethod} Transaction ID (TrxID)</span>
+                        <span className="text-[#13487E]">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          ref={trxInputRef}
+                          type="text"
+                          value={transactionId}
+                          onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
+                          placeholder="e.g. 9K382J879L"
+                          className={`w-full border rounded-xl px-4 py-3 text-base font-mono font-bold focus:outline-none uppercase transition-all ${
+                            isDark ? 'bg-neutral-950 text-amber-300 placeholder-neutral-600' : 'bg-white text-amber-600 placeholder-slate-400'
+                          } ${
+                            popupError?.field === 'trxId'
+                              ? 'border-red-500 ring-2 ring-red-500/20'
+                              : isDark ? 'border-neutral-700 focus:border-[#13487E]' : 'border-slate-300 focus:border-[#13487E]'
+                          }`}
+                        />
+                        <ShieldCheck className="w-5 h-5 text-neutral-400 absolute right-4 top-3.5" />
+                      </div>
+                      <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
+                        টাকা পাঠানোর পর প্রাপ্ত TrxID টি এখানে দিন। (কোনো পিন, ওটিপি বা সেন্ডার নম্বর লাগবে না)।
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                {/* Transaction ID Input */}
-                <div className="space-y-2 pt-2">
-                  <label className={`text-xs font-bold flex items-center gap-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    <span>{deliveryPaymentMethod} Transaction ID (TrxID)</span>
-                    <span className="text-[#13487E]">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      ref={trxInputRef}
-                      type="text"
-                      value={transactionId}
-                      onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
-                      placeholder="e.g. 9K382J879L"
-                      className={`w-full border rounded-xl px-4 py-3 text-base font-mono font-bold focus:outline-none uppercase transition-all ${
-                        isDark ? 'bg-neutral-950 text-amber-300 placeholder-neutral-600' : 'bg-white text-amber-600 placeholder-slate-400'
-                      } ${
-                        popupError?.field === 'trxId'
-                          ? 'border-red-500 ring-2 ring-red-500/20'
-                          : isDark ? 'border-neutral-700 focus:border-[#13487E]' : 'border-slate-300 focus:border-[#13487E]'
-                      }`}
-                    />
-                    <ShieldCheck className="w-5 h-5 text-neutral-400 absolute right-4 top-3.5" />
+                </>
+              ) : (
+                <div className={`p-4 rounded-xl border flex items-center gap-3 ${
+                  isDark ? 'bg-emerald-950/30 border-emerald-800/60 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                }`}>
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 text-emerald-500 font-bold">
+                    ✓
                   </div>
-                  <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
-                    টাকা পাঠানোর পর প্রাপ্ত TrxID টি এখানে দিন। (কোনো পিন, ওটিপি বা সেন্ডার নম্বর লাগবে না)।
-                  </p>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold">Free Delivery Applied! (ফ্রি ডেলিভারি প্রযোজ্য)</h4>
+                    <p className="text-[11px] opacity-80">আপনার অর্ডারে ফ্রি ডেলিভারি চালু থাকায় কোনো অগ্রিম ডেলিভারি চার্জ বা পেমেন্টের প্রয়োজন নেই। সরাসরি নিচে অর্ডার কনফার্ম করুন।</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Delivery & Exchange Policy Section */}
               {settings.delivery_policy_enabled !== false && (

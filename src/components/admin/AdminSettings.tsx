@@ -174,6 +174,9 @@ ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS payment_instructions TEXT;
 ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS delivery_policy_enabled BOOLEAN;
 ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS delivery_policy_text TEXT;
 ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS site_views INTEGER DEFAULT 0;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS free_delivery_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS free_delivery_target TEXT DEFAULT 'all';
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS free_delivery_min_amount NUMERIC DEFAULT 2000;
 
 -- 7. Admin Profiles Table
 CREATE TABLE IF NOT EXISTS public.admin_profiles (
@@ -608,6 +611,101 @@ export const AdminSettings: React.FC = () => {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Free Delivery Settings Box */}
+          <div className="mt-6 pt-6 border-t border-neutral-800/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-white">Free Delivery Option (ফ্রি ডেলিভারি অপশন)</h3>
+                <p className="text-xs text-neutral-400">নির্দিষ্ট পরিমাণ টাকার বেশি কেনাকাটা করলে ডেলিভারি চার্জ ফ্রি করুন এবং অগ্রিম পেমেন্ট লুকিয়ে ফেলুন।</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.free_delivery_enabled)}
+                  onChange={(e) => setFormData({ ...formData, free_delivery_enabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#13487E]"></div>
+              </label>
+            </div>
+
+            {formData.free_delivery_enabled && (
+              <div className="space-y-4 max-w-md pt-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                    Minimum Shopping Amount for Free Delivery (BDT ৳)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={formData.free_delivery_min_amount ?? 2000}
+                      onChange={(e) => setFormData({ ...formData, free_delivery_min_amount: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-[#13487E]"
+                      placeholder="2000"
+                    />
+                  </div>
+                </div>
+
+                {/* Free Delivery Target Select */}
+                <div className="space-y-2 pt-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                    Free Delivery Applicability (কার জন্য ফ্রি ডেলিভারি প্রযোজ্য?)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, free_delivery_target: 'all' })}
+                      className={`p-3 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                        (formData.free_delivery_target ?? 'all') === 'all'
+                          ? 'bg-[#13487E]/20 border-[#13487E] text-white'
+                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="text-white mb-0.5">সবাই (All Bangladesh)</div>
+                      <div className="text-[10px] text-neutral-400 font-normal">ঢাকার ভেতরে ও বাইরে উভয় স্থানে ফ্রি</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, free_delivery_target: 'inside' })}
+                      className={`p-3 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                        formData.free_delivery_target === 'inside'
+                          ? 'bg-[#13487E]/20 border-[#13487E] text-white'
+                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="text-white mb-0.5">শুধুমাত্র ঢাকার ভেতরে</div>
+                      <div className="text-[10px] text-neutral-400 font-normal">বাইরে ফ্রি হবে না (১২০৳ চার্জ প্রযোজ্য)</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, free_delivery_target: 'outside' })}
+                      className={`p-3 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                        formData.free_delivery_target === 'outside'
+                          ? 'bg-[#13487E]/20 border-[#13487E] text-white'
+                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="text-white mb-0.5">শুধুমাত্র ঢাকার বাইরে</div>
+                      <div className="text-[10px] text-neutral-400 font-normal">ঢাকার ভেতরে ফ্রি হবে না (৮০৳ চার্জ প্রযোজ্য)</div>
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-neutral-500 pt-1">
+                  {(formData.free_delivery_target ?? 'all') === 'outside' 
+                    ? 'বর্তমানে শুধুমাত্র ঢাকার বাইরের (Outside Dhaka) অর্ডারে ফ্রি ডেলিভারি কার্যকর থাকবে। ঢাকার ভেতরে অর্ডার করলে স্বাভাবিক ৮০ টাকা চার্জ ও অগ্রিম পেমেন্ট প্রযোজ্য থাকবে।' 
+                    : (formData.free_delivery_target ?? 'all') === 'inside'
+                    ? 'বর্তমানে শুধুমাত্র ঢাকার ভেতরের (Inside Dhaka) অর্ডারে ফ্রি ডেলিভারি কার্যকর থাকবে। ঢাকার বাইরে অর্ডার করলে ১২০ টাকা চার্জ প্রযোজ্য থাকবে।'
+                    : 'শর্ত পূরণ হলে ঢাকার ভেতরে ও বাইরে উভয় স্থানেই ফ্রি ডেলিভারি কার্যকর থাকবে।'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

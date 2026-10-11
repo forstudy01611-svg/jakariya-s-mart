@@ -290,8 +290,32 @@ export const isDhakaDistrict = (district?: string): boolean => {
 export const calculateDeliveryCharge = (
   district?: string,
   insideFee?: number,
-  outsideFee?: number
+  outsideFee?: number,
+  subtotal?: number,
+  freeDeliveryEnabled?: boolean,
+  freeDeliveryMinAmount?: number,
+  freeDeliveryTarget: 'all' | 'inside' | 'outside' = 'all'
 ): number => {
+  const isDhaka = isDhakaDistrict(district);
+
+  if (freeDeliveryEnabled) {
+    const minAmt = freeDeliveryMinAmount ?? 0;
+    const currentSubtotal = subtotal ?? 0;
+    const meetsMin = currentSubtotal >= minAmt;
+
+    if (meetsMin) {
+      if (freeDeliveryTarget === 'all') {
+        return 0;
+      }
+      if (freeDeliveryTarget === 'inside' && isDhaka) {
+        return 0;
+      }
+      if (freeDeliveryTarget === 'outside' && !isDhaka) {
+        return 0;
+      }
+    }
+  }
+
   const inside = typeof insideFee === 'number' && !isNaN(insideFee) ? insideFee : DELIVERY_CHARGE_INSIDE_DHAKA;
   const outside = typeof outsideFee === 'number' && !isNaN(outsideFee) ? outsideFee : DELIVERY_CHARGE_OUTSIDE_DHAKA;
   return isDhakaDistrict(district) ? inside : outside;

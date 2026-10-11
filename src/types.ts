@@ -160,6 +160,9 @@ export interface StoreSettings {
   nagad_number: string;
   nagad_type: string;
   payment_instructions?: string;
+  free_delivery_enabled?: boolean;
+  free_delivery_target?: 'all' | 'inside' | 'outside';
+  free_delivery_min_amount?: number;
   delivery_policy_enabled?: boolean;
   delivery_policy_text?: string;
   social_links: {
